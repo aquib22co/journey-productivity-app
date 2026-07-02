@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 
 interface DatePickerProps {
   value: string; // YYYY-MM-DD
@@ -132,9 +133,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, placeho
   }
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', width: '100%', ...style }}>
-      <div
-        onClick={() => setIsOpen(!isOpen)}
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger
         className="input-field"
         style={{
           display: 'flex',
@@ -147,7 +147,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, placeho
           background: 'rgba(255, 255, 255, 0.03)',
           border: '1px solid rgba(255, 255, 255, 0.08)',
           borderRadius: '6px',
-          userSelect: 'none'
+          userSelect: 'none',
+          width: '100%',
+          ...style
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
@@ -159,7 +161,10 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, placeho
         {value && (
           <button
             type="button"
-            onClick={handleClear}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleClear(e);
+            }}
             style={{
               background: 'transparent',
               border: 'none',
@@ -175,134 +180,130 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, placeho
             <X size={10} />
           </button>
         )}
-      </div>
+      </PopoverTrigger>
 
-      {isOpen && (
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '32px', // Open upwards to avoid overlaying fields or container bounds
-            left: 0,
-            zIndex: 10000,
-            width: '210px',
-            backgroundColor: 'rgba(13, 17, 28, 0.98)',
-            backdropFilter: 'blur(16px)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
-            borderRadius: '8px',
-            padding: '10px',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px',
-            animation: 'fadeIn 0.15s ease'
-          }}
-          className="no-drag"
-        >
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <button
-              type="button"
-              onClick={prevMonth}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-dim)',
-                padding: '2px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <ChevronLeft size={14} />
-            </button>
-            <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-main)' }}>
-              {currentDate.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-            </span>
-            <button
-              type="button"
-              onClick={nextMonth}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--text-dim)',
-                padding: '2px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <ChevronRight size={14} />
-            </button>
-          </div>
-
-          {/* Weekday Titles */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center' }}>
-            {weekdays.map((w) => (
-              <span key={w} style={{ fontSize: '9px', color: 'var(--text-dim)', fontWeight: 600 }}>
-                {w}
-              </span>
-            ))}
-          </div>
-
-          {/* Days Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-            {gridCells}
-          </div>
-
-          {/* Shortcut Row */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
-            <button
-              type="button"
-              onClick={() => {
-                const today = new Date();
-                const y = today.getFullYear();
-                const m = String(today.getMonth() + 1).padStart(2, '0');
-                const d = String(today.getDate()).padStart(2, '0');
-                onChange(`${y}-${m}-${d}`);
-                setIsOpen(false);
-              }}
-              style={{
-                padding: '4px',
-                fontSize: '9.5px',
-                borderRadius: '4px',
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                color: 'var(--text-main)',
-                fontWeight: 600
-              }}
-              className="cal-day-btn"
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                const y = tomorrow.getFullYear();
-                const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
-                const d = String(tomorrow.getDate()).padStart(2, '0');
-                onChange(`${y}-${m}-${d}`);
-                setIsOpen(false);
-              }}
-              style={{
-                padding: '4px',
-                fontSize: '9.5px',
-                borderRadius: '4px',
-                border: 'none',
-                cursor: 'pointer',
-                backgroundColor: 'rgba(255,255,255,0.04)',
-                color: 'var(--text-main)',
-                fontWeight: 600
-              }}
-              className="cal-day-btn"
-            >
-              Tomorrow
-            </button>
-          </div>
+      <PopoverContent
+        side="bottom"
+        align="start"
+        sideOffset={6}
+        className="no-drag"
+        style={{
+          width: '210px',
+          backgroundColor: 'rgba(13, 17, 28, 0.98)',
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: '8px',
+          padding: '10px',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '8px',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            type="button"
+            onClick={prevMonth}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--text-dim)',
+              padding: '2px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+          <span style={{ fontSize: '11px', fontWeight: 'bold', color: 'var(--text-main)' }}>
+            {currentDate.toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
+          </span>
+          <button
+            type="button"
+            onClick={nextMonth}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              color: 'var(--text-dim)',
+              padding: '2px',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            <ChevronRight size={14} />
+          </button>
         </div>
-      )}
+
+        {/* Weekday Titles */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', textAlign: 'center' }}>
+          {weekdays.map((w) => (
+            <span key={w} style={{ fontSize: '9px', color: 'var(--text-dim)', fontWeight: 600 }}>
+              {w}
+            </span>
+          ))}
+        </div>
+
+        {/* Days Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+          {gridCells}
+        </div>
+
+        {/* Shortcut Row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '6px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              const today = new Date();
+              const y = today.getFullYear();
+              const m = String(today.getMonth() + 1).padStart(2, '0');
+              const d = String(today.getDate()).padStart(2, '0');
+              onChange(`${y}-${m}-${d}`);
+              setIsOpen(false);
+            }}
+            style={{
+              padding: '4px',
+              fontSize: '9.5px',
+              borderRadius: '4px',
+              border: 'none',
+              cursor: 'pointer',
+              backgroundColor: 'rgba(255,255,255,0.04)',
+              color: 'var(--text-main)',
+              fontWeight: 600
+            }}
+            className="cal-day-btn"
+          >
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const tomorrow = new Date();
+              tomorrow.setDate(tomorrow.getDate() + 1);
+              const y = tomorrow.getFullYear();
+              const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+              const d = String(tomorrow.getDate()).padStart(2, '0');
+              onChange(`${y}-${m}-${d}`);
+              setIsOpen(false);
+            }}
+            style={{
+              padding: '4px',
+              fontSize: '9.5px',
+              borderRadius: '4px',
+              border: 'none',
+              cursor: 'pointer',
+              backgroundColor: 'rgba(255,255,255,0.04)',
+              color: 'var(--text-main)',
+              fontWeight: 600
+            }}
+            className="cal-day-btn"
+          >
+            Tomorrow
+          </button>
+        </div>
+      </PopoverContent>
 
       {/* Add CSS hover helper */}
       <style>{`
@@ -310,6 +311,6 @@ export const DatePicker: React.FC<DatePickerProps> = ({ value, onChange, placeho
           background-color: rgba(255, 255, 255, 0.08) !important;
         }
       `}</style>
-    </div>
+    </Popover>
   );
 };

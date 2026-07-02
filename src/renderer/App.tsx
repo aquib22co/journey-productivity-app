@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Task, Settings } from '../shared/types';
-import { TaskList, AddTaskCard } from './components/TaskList';
+import { TaskList } from './components/TaskList';
+import { AddTaskCard } from './components/AddTaskCard';
 import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle } from 'lucide-react';
