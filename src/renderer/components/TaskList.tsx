@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { Task } from '../../shared/types';
+import { DatePicker } from './DatePicker';
 import { 
   Plus, 
   Trash2, 
@@ -135,12 +136,10 @@ export const AddTaskCard: React.FC<AddTaskCardProps> = ({ onAddTask }) => {
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                 <span style={{ fontSize: '9.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Due Date</span>
-                <input
-                  type="date"
-                  className="input-field"
-                  style={{ padding: '4px 6px', fontSize: '11px' }}
+                <DatePicker
                   value={newDueDate}
-                  onChange={(e) => setNewDueDate(e.target.value)}
+                  onChange={(val) => setNewDueDate(val)}
+                  placeholder="Set date..."
                 />
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
@@ -451,12 +450,10 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
                           onChange={(e) => setEditDesc(e.target.value)}
                         />
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
-                          <input
-                            type="date"
-                            className="input-field"
-                            style={{ padding: '2px 4px', fontSize: '10.5px' }}
+                          <DatePicker
                             value={editDueDate}
-                            onChange={(e) => setEditDueDate(e.target.value)}
+                            onChange={(val) => setEditDueDate(val)}
+                            placeholder="Due Date..."
                           />
                           <input
                             type="time"

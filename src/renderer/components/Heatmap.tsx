@@ -28,7 +28,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
   // Compute date array starting from January 1st of the current year to the Saturday of the current week
   const today = new Date();
   const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  
+
   // Pad the grid to the end of the current week (Saturday) for a complete rectangle
   const endDay = endDate.getDay();
   endDate.setDate(endDate.getDate() + (6 - endDay)); // 6 is Saturday
@@ -53,9 +53,9 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
     if (task.completedAt) {
       const d = new Date(task.completedAt);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      
+
       completionsByDate[key] = (completionsByDate[key] || 0) + 1;
-      
+
       if (!completedTasksByDate[key]) {
         completedTasksByDate[key] = [];
       }
@@ -81,13 +81,13 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
   ) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const cardRect = e.currentTarget.closest('.widget-card')?.getBoundingClientRect();
-    
+
     if (cardRect) {
       // Determine tooltip offset direction based on cell column index
       const colIndex = Math.floor(idx / 7);
       const totalCols = Math.ceil(days.length / 7);
       const direction = colIndex < totalCols / 2 ? 'right' : 'left';
-      
+
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
       const completedTasks = completedTasksByDate[key] || [];
 
@@ -97,7 +97,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
           year: 'numeric',
           month: 'short',
           day: 'numeric',
-      }),
+        }),
         count,
         x: rect.left - cardRect.left + rect.width / 2, // Relative to the main card component
         y: rect.top - cardRect.top, // Relative to the main card component
@@ -115,12 +115,12 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
     // Check month of each Sunday (column starters)
     for (let i = 0; i < days.length; i += 7) {
       const date = days[i];
-      
+
       // Fix: Skip months of the previous year to avoid clashing overlap at the start of the year (e.g. Dec/Jan labels)
       if (date.getFullYear() !== today.getFullYear()) {
         continue;
       }
-      
+
       const month = date.getMonth();
       if (month !== lastMonth) {
         monthHeaders.push({
@@ -256,7 +256,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
             Learn how we count contributions
           </a>
         </div>
-        
+
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ fontSize: '12px' }}>Less</span>
           <div style={{ display: 'flex', gap: '4px' }}>
@@ -275,12 +275,12 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
         <div
           style={{
             position: 'absolute',
-            left: hoveredCell.direction === 'right' 
-              ? `${hoveredCell.x + 12}px` 
+            left: hoveredCell.direction === 'right'
+              ? `${hoveredCell.x + 12}px`
               : `${hoveredCell.x - 12}px`,
             top: `${hoveredCell.y + 7.5}px`, // Center vertically aligned
-            transform: hoveredCell.direction === 'right' 
-              ? 'translate(0, -50%)' 
+            transform: hoveredCell.direction === 'right'
+              ? 'translate(0, -50%)'
               : 'translate(-100%, -50%)',
             padding: '10px 14px',
             minWidth: '185px',
@@ -301,20 +301,20 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
             <span>{hoveredCell.count} completed</span>
             <span style={{ color: 'var(--accent-color)' }}>{hoveredCell.dateStr.split(',')[0]}</span>
           </div>
-          
+
           <div style={{ color: 'var(--text-dim)', fontSize: '9.5px', marginBottom: '2px' }}>
             {hoveredCell.dateStr}
           </div>
 
           {hoveredCell.completedTasks.length > 0 && (
-            <div style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '5px', 
-              marginTop: '6px', 
-              borderTop: '1px solid rgba(255, 255, 255, 0.08)', 
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '5px',
+              marginTop: '6px',
+              borderTop: '1px solid rgba(255, 255, 255, 0.08)',
               paddingTop: '6px',
-              width: '100%' 
+              width: '100%'
             }}>
               {hoveredCell.completedTasks.map((title, i) => (
                 <div key={i} style={{ display: 'flex', gap: '6px', fontSize: '11px', color: 'var(--text-main)', lineHeight: '1.2' }}>
@@ -328,7 +328,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
           )}
         </div>
       )}
-      
+
       {/* Embedded cell scale-up styling */}
       <style>{`
         .hm-cell:hover {

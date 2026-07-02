@@ -4,6 +4,9 @@ import { TaskList, AddTaskCard } from './components/TaskList';
 import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const DEFAULT_SETTINGS: Settings = {
   alwaysOnTop: true,
@@ -211,137 +214,159 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="widget-container">
-      {/* Frameless Drag Handle Header */}
-      <header className="widget-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Settings Icon enclosed in a dark rounded card button */}
-          <div className="no-drag">
-            <button 
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
-              className={`win-btn ${isSettingsOpen ? 'active' : ''}`}
-              title="Settings"
-              style={{
-                width: '48px',
-                height: '48px',
-                borderRadius: '10px',
-                border: '1px solid rgba(255, 255, 255, 0.05)',
-                background: 'rgba(18, 24, 38, 0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: isSettingsOpen ? 'var(--accent-color)' : 'var(--text-muted)'
-              }}
-            >
-              <SettingsIcon size={20} />
-            </button>
+    <TooltipProvider>
+      <div className="widget-container">
+        {/* Frameless Drag Handle Header */}
+        <header className="widget-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {/* Settings Icon enclosed in a dark rounded card button */}
+            <div className="no-drag">
+              <Tooltip>
+                <TooltipTrigger 
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
+                  className={`win-btn ${isSettingsOpen ? 'active' : ''}`}
+                  style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '10px',
+                    border: '1px solid rgba(255, 255, 255, 0.05)',
+                    background: 'rgba(18, 24, 38, 0.5)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: isSettingsOpen ? 'var(--accent-color)' : 'var(--text-muted)'
+                  }}
+                >
+                  <SettingsIcon size={20} />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" align="start">
+                  <p>{isSettingsOpen ? 'Close Settings' : 'Open Settings'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+
+            {/* Header Stats Row Card (Aligned to left-center) */}
+            {!isSettingsOpen && (
+              <Badge 
+                variant="outline" 
+                className="flex flex-row items-center gap-6 no-drag"
+                style={{
+                  height: '48px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  background: 'rgba(18, 24, 38, 0.5)',
+                  padding: '0 20px',
+                }}
+              >
+                {/* Streak */}
+                <div className="flex items-center gap-2">
+                  <Flame size={16} className="text-amber-500 fill-amber-500/10" />
+                  <span className="text-[12px] text-slate-400 font-normal">Streak:</span>
+                  <span className="text-[15px] font-bold text-slate-100">{currentStreak}d</span>
+                </div>
+                
+                <Separator orientation="vertical" className="bg-white/10" style={{ alignSelf: 'center', height: '16px' }} />
+
+                {/* Max */}
+                <div className="flex items-center gap-2">
+                  <Award size={16} className="text-indigo-400 fill-indigo-400/10" />
+                  <span className="text-[12px] text-slate-400 font-normal">Max:</span>
+                  <span className="text-[15px] font-bold text-slate-100">{maxStreak}d</span>
+                </div>
+
+                <Separator orientation="vertical" className="bg-white/10" style={{ alignSelf: 'center', height: '16px' }} />
+
+                {/* Total */}
+                <div className="flex items-center gap-2">
+                  <CheckCircle size={16} className="text-emerald-400 fill-emerald-400/10" />
+                  <span className="text-[12px] text-slate-400 font-normal">Total:</span>
+                  <span className="text-[15px] font-bold text-slate-100">{totalCompleted}</span>
+                </div>
+              </Badge>
+            )}
           </div>
 
-          {/* Header Stats Row Card (Aligned to left-center) */}
-          {!isSettingsOpen && (
-            <div 
-              style={{ 
-                display: 'flex', 
-                flexDirection: 'row', 
-                gap: '24px', 
-                alignItems: 'center',
-                height: '48px',
-                background: 'rgba(18, 24, 38, 0.5)', 
-                border: '1px solid rgba(255, 255, 255, 0.05)', 
-                padding: '0 20px', 
-                borderRadius: '10px' 
-              }}
-            >
-              {/* Streak */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Flame size={18} color="#f59e0b" />
-                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Streak:</span>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>{currentStreak}d</span>
+          {/* Right Side Controls: Minimize and Close */}
+          <div className="window-controls no-drag">
+            <Tooltip>
+              <TooltipTrigger 
+                onClick={handleMinimize} 
+                className="win-btn" 
+                style={{ width: '38px', height: '38px', borderRadius: '8px' }}
+              >
+                <Minus size={15} />
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Minimize</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger 
+                onClick={handleClose} 
+                className="win-btn close" 
+                style={{ 
+                  width: '38px', 
+                  height: '38px', 
+                  borderRadius: '8px', 
+                  border: '1px solid rgba(255, 255, 255, 0.05)', 
+                  background: 'rgba(255, 255, 255, 0.02)' 
+                }}
+              >
+                <X size={15} />
+              </TooltipTrigger>
+              <TooltipContent side="bottom" align="end">
+                <p>Close Widget</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </header>
+
+        {/* Main Layout */}
+        <main className="widget-content">
+          {isSettingsOpen ? (
+            <div style={{ flex: 1, overflowY: 'auto' }} className="no-drag">
+              <SettingsPanel
+                settings={settings}
+                tasks={tasks}
+                onUpdateSettings={handleSaveSettings}
+                onImportTasks={handleImportTasks}
+                onClearTasks={handleClearTasks}
+              />
+            </div>
+          ) : (
+            /* Side-by-Side Horizontal Grid Layout */
+            <div className="dashboard-grid">
+              {/* Left Column: Heatmap and Add Task Card */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', minHeight: 0, minWidth: 0 }}>
+                <Heatmap tasks={tasks} settings={settings} />
+                <AddTaskCard onAddTask={handleAddTask} />
               </div>
-              <div style={{ width: '1px', height: '16px', background: 'rgba(255, 255, 255, 0.06)' }} />
-              {/* Max */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Award size={18} color="#6366f1" />
-                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Max:</span>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>{maxStreak}d</span>
-              </div>
-              <div style={{ width: '1px', height: '16px', background: 'rgba(255, 255, 255, 0.06)' }} />
-              {/* Total */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CheckCircle size={18} color="#10b981" />
-                <span style={{ fontSize: '11.5px', color: 'var(--text-muted)' }}>Total:</span>
-                <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>{totalCompleted}</span>
+
+              {/* Right Column: Task List Card */}
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
+                <TaskList
+                  tasks={tasks}
+                  onUpdateTask={handleUpdateTask}
+                  onDeleteTask={handleDeleteTask}
+                />
               </div>
             </div>
           )}
-        </div>
+        </main>
 
-        {/* Right Side Controls: Minimize and Close */}
-        <div className="window-controls no-drag">
-          <button onClick={handleMinimize} className="win-btn" title="Minimize" style={{ width: '38px', height: '38px', borderRadius: '8px' }}>
-            <Minus size={15} />
-          </button>
-          <button 
-            onClick={handleClose} 
-            className="win-btn close" 
-            title="Close" 
-            style={{ 
-              width: '38px', 
-              height: '38px', 
-              borderRadius: '8px', 
-              border: '1px solid rgba(255, 255, 255, 0.05)', 
-              background: 'rgba(255, 255, 255, 0.02)' 
-            }}
-          >
-            <X size={15} />
-          </button>
-        </div>
-      </header>
-
-      {/* Main Layout */}
-      <main className="widget-content">
-        {isSettingsOpen ? (
-          <div style={{ flex: 1, overflowY: 'auto' }} className="no-drag">
-            <SettingsPanel
-              settings={settings}
-              tasks={tasks}
-              onUpdateSettings={handleSaveSettings}
-              onImportTasks={handleImportTasks}
-              onClearTasks={handleClearTasks}
-            />
-          </div>
-        ) : (
-          /* Side-by-Side Horizontal Grid Layout */
-          <div className="dashboard-grid">
-            {/* Left Column: Heatmap and Add Task Card */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', minHeight: 0, minWidth: 0 }}>
-              <Heatmap tasks={tasks} settings={settings} />
-              <AddTaskCard onAddTask={handleAddTask} />
-            </div>
-
-            {/* Right Column: Task List Card */}
-            <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-              <TaskList
-                tasks={tasks}
-                onUpdateTask={handleUpdateTask}
-                onDeleteTask={handleDeleteTask}
-              />
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* Embedded Spin Animation keyframes */}
-      <style>{`
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-    </div>
+        {/* Embedded Spin Animation keyframes */}
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+      </div>
+    </TooltipProvider>
   );
 };
 
