@@ -17,6 +17,99 @@ const DEFAULT_SETTINGS: Settings = {
   heatmapThresholds: { low: 1, medium: 3, high: 5 },
 };
 
+const BadgeWindow: React.FC = () => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [hasMoved, setHasMoved] = useState(false);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setIsDragging(true);
+    setDragStart({ x: e.screenX, y: e.screenY });
+    setHasMoved(false);
+    
+    // Capture pointer events to track moves even outside the element bounds
+    const element = e.currentTarget as HTMLElement;
+    element.setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    const dx = e.screenX - dragStart.x;
+    const dy = e.screenY - dragStart.y;
+    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+      setHasMoved(true);
+      if (window.electronAPI && window.electronAPI.dragWindow) {
+        window.electronAPI.dragWindow(dx, dy);
+      }
+      setDragStart({ x: e.screenX, y: e.screenY });
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    setIsDragging(false);
+    const element = e.currentTarget as HTMLElement;
+    try {
+      element.releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore
+    }
+
+    if (!hasMoved) {
+      if (window.electronAPI && window.electronAPI.restoreMainWindow) {
+        window.electronAPI.restoreMainWindow();
+      }
+    }
+  };
+
+  return (
+    <div
+      style={{
+        width: '100vw',
+        height: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'transparent',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        className="badge-hover-effect"
+        style={{
+          width: '56px',
+          height: '56px',
+          borderRadius: '50%',
+          background: 'rgba(18, 24, 38, 0.95)',
+          border: '1.5px solid var(--accent-color, #0084ff)',
+          boxShadow: '0 8px 24px rgba(0, 132, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'grab',
+          userSelect: 'none',
+          transition: isDragging ? 'none' : 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s ease',
+          transform: isDragging ? 'scale(0.95)' : 'scale(1)',
+        }}
+      >
+        <Flame size={26} className="text-amber-500 fill-amber-500/20" style={{ filter: 'drop-shadow(0 0 5px rgba(245, 158, 11, 0.6))' }} />
+        <style>{`
+          .badge-hover-effect:hover {
+            transform: scale(1.1) !important;
+            box-shadow: 0 12px 28px rgba(0, 132, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+            cursor: grab;
+          }
+          .badge-hover-effect:active {
+            cursor: grabbing;
+          }
+        `}</style>
+      </div>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
@@ -116,11 +209,23 @@ const App: React.FC = () => {
 
   // Custom title bar buttons
   const handleMinimize = () => {
-    if (window.electronAPI) window.electronAPI.minimizeWindow();
+    console.log('[Renderer] Minimize button clicked!');
+    if (window.electronAPI) {
+      console.log('[Renderer] Exists window.electronAPI. Calling minimizeWindow()');
+      window.electronAPI.minimizeWindow();
+    } else {
+      console.warn('[Renderer] window.electronAPI is undefined!');
+    }
   };
 
   const handleClose = () => {
-    if (window.electronAPI) window.electronAPI.closeWindow();
+    console.log('[Renderer] Close button clicked!');
+    if (window.electronAPI) {
+      console.log('[Renderer] Calling closeWindow()');
+      window.electronAPI.closeWindow();
+    } else {
+      console.warn('[Renderer] window.electronAPI is undefined!');
+    }
   };
 
   // Streaks calculation inside App.tsx
@@ -194,6 +299,13 @@ const App: React.FC = () => {
   };
 
   const { currentStreak, maxStreak, totalCompleted } = calculateStreaks();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const isBadgeMode = urlParams.get('mode') === 'badge';
+
+  if (isBadgeMode) {
+    return <BadgeWindow />;
+  }
 
   if (isLoading) {
     return (

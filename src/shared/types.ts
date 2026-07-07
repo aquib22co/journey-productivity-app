@@ -36,6 +36,8 @@ export interface ElectronAPI {
   minimizeWindow: () => Promise<void>;
   hideWindow: () => Promise<void>;
   closeWindow: () => Promise<void>;
+  dragWindow: (dx: number, dy: number) => void;
+  restoreMainWindow: () => Promise<void>;
 }
 
 declare global {

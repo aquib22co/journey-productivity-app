@@ -10,4 +10,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   minimizeWindow: () => ipcRenderer.invoke('minimize-window'),
   hideWindow: () => ipcRenderer.invoke('hide-window'),
   closeWindow: () => ipcRenderer.invoke('close-window'),
+  dragWindow: (dx: number, dy: number) => ipcRenderer.send('drag-window', { dx, dy }),
+  restoreMainWindow: () => ipcRenderer.invoke('restore-main-window'),
 });

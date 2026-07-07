@@ -9,6 +9,11 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 	setOpacity: (opacity) => electron.ipcRenderer.invoke("set-opacity", opacity),
 	minimizeWindow: () => electron.ipcRenderer.invoke("minimize-window"),
 	hideWindow: () => electron.ipcRenderer.invoke("hide-window"),
-	closeWindow: () => electron.ipcRenderer.invoke("close-window")
+	closeWindow: () => electron.ipcRenderer.invoke("close-window"),
+	dragWindow: (dx, dy) => electron.ipcRenderer.send("drag-window", {
+		dx,
+		dy
+	}),
+	restoreMainWindow: () => electron.ipcRenderer.invoke("restore-main-window")
 });
 //#endregion

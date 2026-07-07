@@ -8,6 +8,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 let win: BrowserWindow | null = null;
+let badgeWin: BrowserWindow | null = null;
 let tray: Tray | null = null;
 
 const dataFilePath = path.join(app.getPath('userData'), 'journey-widget-data.json');
@@ -145,7 +146,7 @@ function createWindow() {
     skipTaskbar: true,
     backgroundMaterial: 'none',
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, 'preload.mjs'),
       nodeIntegration: false,
       contextIsolation: true,
     },
@@ -192,6 +193,58 @@ function createWindow() {
     }
     win = null;
   });
+}
+
+function createBadgeWindow() {
+  console.log('[Main] createBadgeWindow called');
+  if (badgeWin) {
+    console.log('[Main] badgeWin already exists');
+    return;
+  }
+  try {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workArea;
+
+    const badgeSize = 70; // 70x70 to allow for hover scaling and shadows
+    const badgeX = width - badgeSize - 24;
+    const badgeY = height - badgeSize - 24;
+    console.log(`[Main] Badge coordinates calculated: x=${badgeX}, y=${badgeY}, size=${badgeSize}`);
+
+    badgeWin = new BrowserWindow({
+      x: badgeX,
+      y: badgeY,
+      width: badgeSize,
+      height: badgeSize,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: false,
+      skipTaskbar: true,
+      resizable: false,
+      backgroundMaterial: 'none',
+      webPreferences: {
+        preload: path.join(__dirname, 'preload.mjs'),
+        nodeIntegration: false,
+        contextIsolation: true,
+      },
+    });
+
+    if (process.env.VITE_DEV_SERVER_URL) {
+      const devUrl = `${process.env.VITE_DEV_SERVER_URL}?mode=badge`;
+      console.log(`[Main] Loading dev server URL: ${devUrl}`);
+      badgeWin.loadURL(devUrl);
+    } else {
+      const buildPath = path.join(__dirname, '../dist/index.html');
+      console.log(`[Main] Loading production index file: ${buildPath}`);
+      badgeWin.loadFile(buildPath, { query: { mode: 'badge' } });
+    }
+
+    badgeWin.on('closed', () => {
+      console.log('[Main] badgeWin closed');
+      badgeWin = null;
+    });
+  } catch (error) {
+    console.error('[Main] Exception caught in createBadgeWindow:', error);
+  }
 }
 
 // Single Instance Lock
@@ -275,7 +328,24 @@ ipcMain.handle('set-opacity', (_event, _opacity) => {
 });
 
 ipcMain.handle('minimize-window', () => {
-  if (win) win.minimize();
+  console.log('[Main] IPC minimize-window handler invoked');
+  if (win) {
+    try {
+      console.log('[Main] Hiding main window...');
+      win.hide();
+      if (!badgeWin) {
+        console.log('[Main] badgeWin is null. Spawning badge...');
+        createBadgeWindow();
+      } else {
+        console.log('[Main] badgeWin is already spawned. Showing badge...');
+        badgeWin.show();
+      }
+    } catch (error) {
+      console.error('[Main] Error handling minimize-window IPC:', error);
+    }
+  } else {
+    console.warn('[Main] Cannot minimize: win is null!');
+  }
 });
 
 ipcMain.handle('hide-window', () => {
@@ -283,5 +353,25 @@ ipcMain.handle('hide-window', () => {
 });
 
 ipcMain.handle('close-window', () => {
+  if (badgeWin) badgeWin.close();
   if (win) win.close();
+});
+
+ipcMain.handle('restore-main-window', () => {
+  if (badgeWin) {
+    badgeWin.hide();
+  }
+  if (win) {
+    win.show();
+    win.focus();
+  }
+});
+
+ipcMain.on('drag-window', (event, { dx, dy }) => {
+  const senderWin = BrowserWindow.fromWebContents(event.sender);
+  if (senderWin) {
+    const [x, y] = senderWin.getPosition();
+    // Electron's setPosition requires integer values, which can be violated by display scaling
+    senderWin.setPosition(Math.round(x + dx), Math.round(y + dy));
+  }
 });
