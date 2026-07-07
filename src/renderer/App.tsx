@@ -26,7 +26,7 @@ const BadgeWindow: React.FC = () => {
     setIsDragging(true);
     setDragStart({ x: e.screenX, y: e.screenY });
     setHasMoved(false);
-    
+
     // Capture pointer events to track moves even outside the element bounds
     const element = e.currentTarget as HTMLElement;
     element.setPointerCapture(e.pointerId);
@@ -123,7 +123,7 @@ const App: React.FC = () => {
         if (window.electronAPI) {
           const loadedTasks = await window.electronAPI.getTasks();
           const loadedSettings = await window.electronAPI.getSettings();
-          
+
           setTasks(loadedTasks || []);
           setSettings(loadedSettings || DEFAULT_SETTINGS);
         } else {
@@ -172,10 +172,10 @@ const App: React.FC = () => {
   };
 
   const handleAddTask = (
-    title: string, 
-    description?: string, 
-    dueDate?: string, 
-    category?: 'work' | 'social' | 'study' | 'general', 
+    title: string,
+    description?: string,
+    dueDate?: string,
+    category?: 'work' | 'social' | 'study' | 'general',
     time?: string
   ) => {
     const newTask: Task = {
@@ -234,7 +234,7 @@ const App: React.FC = () => {
     let maxStreak = 0;
     let tempStreak = 0;
     let totalCompleted = 0;
-    
+
     const completedDates = new Set(
       tasks
         .filter(t => t.completedAt)
@@ -243,14 +243,14 @@ const App: React.FC = () => {
           return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         })
     );
-    
+
     totalCompleted = tasks.filter(t => t.completedAt).length;
 
     const today = new Date();
     const checkDate = new Date(today);
     const todayKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
     let streakActive = completedDates.has(todayKey);
-    
+
     if (!streakActive) {
       checkDate.setDate(checkDate.getDate() - 1);
       const yesterdayKey = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
@@ -291,7 +291,7 @@ const App: React.FC = () => {
       }
       prevDate = currentDate;
     }
-    
+
     if (tempStreak > maxStreak) maxStreak = tempStreak;
     if (currentStreak > maxStreak) maxStreak = currentStreak;
 
@@ -320,8 +320,8 @@ const App: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div 
-        className="widget-container" 
+      <div
+        className="widget-container"
         style={{ background: `rgba(9, 13, 22, ${settings.opacity})` }}
       >
         {/* Frameless Drag Handle Header */}
@@ -330,8 +330,8 @@ const App: React.FC = () => {
             {/* Settings Icon enclosed in a dark rounded card button */}
             <div className="no-drag">
               <Tooltip>
-                <TooltipTrigger 
-                  onClick={() => setIsSettingsOpen(!isSettingsOpen)} 
+                <TooltipTrigger
+                  onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                   className={`win-btn ${isSettingsOpen ? 'active' : ''}`}
                   style={{
                     width: '48px',
@@ -355,8 +355,8 @@ const App: React.FC = () => {
 
             {/* Header Stats Row Card (Aligned to left-center) */}
             {!isSettingsOpen && (
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className="flex flex-row items-center gap-6 no-drag"
                 style={{
                   height: '48px',
@@ -372,7 +372,7 @@ const App: React.FC = () => {
                   <span className="text-[12px] text-slate-400 font-normal">Streak:</span>
                   <span className="text-[15px] font-bold text-slate-100">{currentStreak}d</span>
                 </div>
-                
+
                 <Separator orientation="vertical" className="bg-white/10" style={{ alignSelf: 'center', height: '16px' }} />
 
                 {/* Max */}
@@ -397,9 +397,9 @@ const App: React.FC = () => {
           {/* Right Side Controls: Minimize and Close */}
           <div className="window-controls no-drag">
             <Tooltip>
-              <TooltipTrigger 
-                onClick={handleMinimize} 
-                className="win-btn" 
+              <TooltipTrigger
+                onClick={handleMinimize}
+                className="win-btn"
                 style={{ width: '38px', height: '38px', borderRadius: '8px' }}
               >
                 <Minus size={15} />
@@ -410,15 +410,15 @@ const App: React.FC = () => {
             </Tooltip>
 
             <Tooltip>
-              <TooltipTrigger 
-                onClick={handleClose} 
-                className="win-btn close" 
-                style={{ 
-                  width: '38px', 
-                  height: '38px', 
-                  borderRadius: '8px', 
-                  border: '1px solid rgba(255, 255, 255, 0.05)', 
-                  background: 'rgba(255, 255, 255, 0.02)' 
+              <TooltipTrigger
+                onClick={handleClose}
+                className="win-btn close"
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '8px',
+                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  background: 'rgba(255, 255, 255, 0.02)'
                 }}
               >
                 <X size={15} />

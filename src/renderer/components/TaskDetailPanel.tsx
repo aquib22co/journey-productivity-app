@@ -93,11 +93,11 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           type="button"
           onClick={onCancel}
           className="win-btn"
-          style={{ 
-            width: '28px', 
-            height: '28px', 
-            display: 'flex', 
-            alignItems: 'center', 
+          style={{
+            width: '28px',
+            height: '28px',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             borderRadius: '6px',
             background: 'rgba(255, 255, 255, 0.03)',
@@ -119,9 +119,9 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           <input
             type="text"
             className="input-field"
-            style={{ 
-              fontSize: '14.5px', 
-              fontWeight: '700', 
+            style={{
+              fontSize: '14.5px',
+              fontWeight: '700',
               color: 'var(--text-main)',
               background: 'transparent',
               border: 'none',
@@ -145,9 +145,9 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
           placeholder="Add description..."
           value={editDesc}
           onChange={(e) => setEditDesc(e.target.value)}
-          style={{ 
-            fontSize: '12px', 
-            color: 'var(--text-main)', 
+          style={{
+            fontSize: '12px',
+            color: 'var(--text-main)',
             background: 'rgba(255,255,255,0.015)',
             border: '1px solid rgba(255,255,255,0.03)',
             padding: '8px 10px',
@@ -200,11 +200,11 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
               onBlur={handleMinBlur}
               disabled={!editHour}
             />
-            <div style={{ 
-              display: 'flex', 
-              borderRadius: '6px', 
-              overflow: 'hidden', 
-              border: '1px solid rgba(255, 255, 255, 0.08)', 
+            <div style={{
+              display: 'flex',
+              borderRadius: '6px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               background: 'rgba(255, 255, 255, 0.02)',
               height: '100%',
               opacity: editHour ? 1 : 0.5,
@@ -287,8 +287,8 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
             onDelete(task.id);
           }}
           className="btn btn-secondary"
-          style={{ 
-            padding: '5px 10px', 
+          style={{
+            padding: '5px 10px',
             fontSize: '11px',
             color: 'var(--danger-color)',
             background: 'rgba(244,63,94,0.04)',
@@ -299,15 +299,15 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
         </button>
 
         <div style={{ display: 'flex', gap: '6px' }}>
-          <button 
+          <button
             type="button"
-            onClick={onCancel} 
-            className="btn btn-secondary" 
+            onClick={onCancel}
+            className="btn btn-secondary"
             style={{ padding: '5px 10px', fontSize: '11px' }}
           >
             Cancel
           </button>
-          <button 
+          <button
             type="button"
             onClick={() => {
               if (!editTitle.trim()) return;
@@ -325,8 +325,8 @@ export const TaskDetailPanel: React.FC<TaskDetailPanelProps> = ({
                 category: editCategory,
                 time: formattedTime,
               });
-            }} 
-            className="btn" 
+            }}
+            className="btn"
             style={{ padding: '5px 12px', fontSize: '11px', background: 'var(--accent-color)', color: '#ffffff' }}
           >
             Save

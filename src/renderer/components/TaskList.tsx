@@ -209,8 +209,8 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
               >
                 {/* Row 1: Checkbox & Text Content (Title & Description) */}
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', width: '100%' }}>
-                  <div 
-                    className="task-checkbox-container" 
+                  <div
+                    className="task-checkbox-container"
                     style={{ marginTop: '3px' }}
                     onClick={(e) => e.stopPropagation()}
                   >
@@ -296,8 +296,8 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
                   </div>
 
                   {/* Right side: Actions */}
-                  <div 
-                    className="task-actions" 
+                  <div
+                    className="task-actions"
                     style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
                     onClick={(e) => e.stopPropagation()}
                   >

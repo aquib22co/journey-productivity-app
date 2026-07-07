@@ -168,11 +168,11 @@ export const AddTaskCard: React.FC<AddTaskCardProps> = ({ onAddTask }) => {
                     onBlur={handleMinBlur}
                     disabled={!newHour}
                   />
-                  <div style={{ 
-                    display: 'flex', 
-                    borderRadius: '6px', 
-                    overflow: 'hidden', 
-                    border: '1px solid rgba(255, 255, 255, 0.08)', 
+                  <div style={{
+                    display: 'flex',
+                    borderRadius: '6px',
+                    overflow: 'hidden',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
                     background: 'rgba(255, 255, 255, 0.02)',
                     height: '100%',
                     opacity: newHour ? 1 : 0.5,
