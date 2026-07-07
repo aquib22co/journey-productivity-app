@@ -100,6 +100,11 @@ textarea {
   padding: 0 16px;
   border-bottom: 1px solid var(--border-card);
   background: rgba(0, 0, 0, 0.2);
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag !important;
 }
 
 .window-controls {

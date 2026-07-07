@@ -1,1 +1,14 @@
-let e=require("electron");e.contextBridge.exposeInMainWorld(`electronAPI`,{getTasks:()=>e.ipcRenderer.invoke(`get-tasks`),saveTasks:t=>e.ipcRenderer.invoke(`save-tasks`,t),getSettings:()=>e.ipcRenderer.invoke(`get-settings`),saveSettings:t=>e.ipcRenderer.invoke(`save-settings`,t),setAlwaysOnTop:t=>e.ipcRenderer.invoke(`set-always-on-top`,t),setOpacity:t=>e.ipcRenderer.invoke(`set-opacity`,t),minimizeWindow:()=>e.ipcRenderer.invoke(`minimize-window`),hideWindow:()=>e.ipcRenderer.invoke(`hide-window`),closeWindow:()=>e.ipcRenderer.invoke(`close-window`)});
+let electron = require("electron");
+//#region src/main/preload.ts
+electron.contextBridge.exposeInMainWorld("electronAPI", {
+	getTasks: () => electron.ipcRenderer.invoke("get-tasks"),
+	saveTasks: (tasks) => electron.ipcRenderer.invoke("save-tasks", tasks),
+	getSettings: () => electron.ipcRenderer.invoke("get-settings"),
+	saveSettings: (settings) => electron.ipcRenderer.invoke("save-settings", settings),
+	setAlwaysOnTop: (alwaysOnTop) => electron.ipcRenderer.invoke("set-always-on-top", alwaysOnTop),
+	setOpacity: (opacity) => electron.ipcRenderer.invoke("set-opacity", opacity),
+	minimizeWindow: () => electron.ipcRenderer.invoke("minimize-window"),
+	hideWindow: () => electron.ipcRenderer.invoke("hide-window"),
+	closeWindow: () => electron.ipcRenderer.invoke("close-window")
+});
+//#endregion

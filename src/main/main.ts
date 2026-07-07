@@ -29,7 +29,8 @@ function readData() {
           theme: 'dark',
           heatmapThresholds: { low: 1, medium: 3, high: 5 },
           ...(parsed.settings || {})
-        }
+        },
+        windowBounds: parsed.windowBounds || null
       };
     }
   } catch (error) {
@@ -43,7 +44,8 @@ function readData() {
       openAtLogin: false,
       theme: 'dark',
       heatmapThresholds: { low: 1, medium: 3, high: 5 }
-    }
+    },
+    windowBounds: null
   };
 }
 
@@ -86,15 +88,48 @@ function createTray() {
 function createWindow() {
   const initialData = readData();
   const settings = initialData.settings;
+  const savedBounds = initialData.windowBounds;
 
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height, x, y } = primaryDisplay.workArea;
 
-  const windowWidth = 960;
-  const windowHeight = 620;
+  // Restore saved width/height or use defaults
+  let windowWidth = 960;
+  let windowHeight = 620;
+  if (savedBounds && typeof savedBounds.width === 'number' && typeof savedBounds.height === 'number') {
+    windowWidth = Math.max(800, Math.min(1400, savedBounds.width));
+    windowHeight = Math.max(500, Math.min(1000, savedBounds.height));
+  }
 
-  const windowX = x + width - windowWidth - 24;
-  const windowY = y + height - windowHeight - 24;
+  // Restore saved position or default to bottom-right corner of the primary display
+  let windowX = x + width - windowWidth - 24;
+  let windowY = y + height - windowHeight - 24;
+
+  if (savedBounds && typeof savedBounds.x === 'number' && typeof savedBounds.y === 'number') {
+    // Safety check: ensure the center of the saved bounds is visible on at least one display
+    const savedCenterX = savedBounds.x + windowWidth / 2;
+    const savedCenterY = savedBounds.y + windowHeight / 2;
+    
+    let isVisible = false;
+    const displays = screen.getAllDisplays();
+    for (const display of displays) {
+      const bounds = display.bounds;
+      if (
+        savedCenterX >= bounds.x &&
+        savedCenterX <= bounds.x + bounds.width &&
+        savedCenterY >= bounds.y &&
+        savedCenterY <= bounds.y + bounds.height
+      ) {
+        isVisible = true;
+        break;
+      }
+    }
+
+    if (isVisible) {
+      windowX = savedBounds.x;
+      windowY = savedBounds.y;
+    }
+  }
 
   win = new BrowserWindow({
     x: windowX,
@@ -122,12 +157,40 @@ function createWindow() {
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
   } else {
-    // When built, vite-plugin-electron builds preload to dist-electron/preload.js
-    // and html file goes to dist/index.html
     win.loadFile(path.join(__dirname, '../dist/index.html'));
   }
 
+  // Debounced listener to persist window position and size
+  let saveBoundsTimeout: NodeJS.Timeout | null = null;
+  const saveWindowBoundsDebounced = () => {
+    if (saveBoundsTimeout) {
+      clearTimeout(saveBoundsTimeout);
+    }
+    saveBoundsTimeout = setTimeout(() => {
+      if (!win) return;
+      try {
+        const bounds = win.getBounds();
+        const data = readData();
+        data.windowBounds = {
+          x: bounds.x,
+          y: bounds.y,
+          width: bounds.width,
+          height: bounds.height,
+        };
+        writeData(data);
+      } catch (error) {
+        console.error('Failed to save window bounds:', error);
+      }
+    }, 500); // 500ms debounce
+  };
+
+  win.on('move', saveWindowBoundsDebounced);
+  win.on('resize', saveWindowBoundsDebounced);
+
   win.on('closed', () => {
+    if (saveBoundsTimeout) {
+      clearTimeout(saveBoundsTimeout);
+    }
     win = null;
   });
 }
