@@ -97,8 +97,8 @@ function createWindow() {
   let windowWidth = 960;
   let windowHeight = 620;
   if (savedBounds && typeof savedBounds.width === 'number' && typeof savedBounds.height === 'number') {
-    windowWidth = Math.max(800, Math.min(1400, savedBounds.width));
-    windowHeight = Math.max(500, Math.min(1000, savedBounds.height));
+    windowWidth = Math.max(800, Math.min(1200, savedBounds.width));
+    windowHeight = Math.max(800, Math.min(800, savedBounds.height));
   }
 
   // Restore saved position or default to bottom-right corner of the primary display
@@ -109,7 +109,7 @@ function createWindow() {
     // Safety check: ensure the center of the saved bounds is visible on at least one display
     const savedCenterX = savedBounds.x + windowWidth / 2;
     const savedCenterY = savedBounds.y + windowHeight / 2;
-    
+
     let isVisible = false;
     const displays = screen.getAllDisplays();
     for (const display of displays) {
@@ -137,9 +137,9 @@ function createWindow() {
     width: windowWidth,
     height: windowHeight,
     minWidth: 800,
-    minHeight: 500,
-    maxWidth: 1400,
-    maxHeight: 1000,
+    minHeight: 600,
+    maxWidth: 1200,
+    maxHeight: 800,
     frame: false,
     transparent: true,
     alwaysOnTop: false,
@@ -355,10 +355,10 @@ ipcMain.handle('hide-window', () => {
 ipcMain.handle('close-window', () => {
   console.log('[Main] IPC close-window handler invoked, quitting app...');
   if (badgeWin) {
-    try { badgeWin.close(); } catch {}
+    try { badgeWin.close(); } catch { }
   }
   if (win) {
-    try { win.close(); } catch {}
+    try { win.close(); } catch { }
   }
   app.quit();
 });

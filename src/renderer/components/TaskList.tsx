@@ -128,10 +128,11 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
         </div>
         {!detailedTask && !isAddingTask && (
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
             onClick={() => setIsAddingTask(true)}
             title="Add Task"
+            style={{ background: '#0084ff' }}
           >
             <Plus size={14} />
             Task
