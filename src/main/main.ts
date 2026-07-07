@@ -87,7 +87,6 @@ function createTray() {
 
 function createWindow() {
   const initialData = readData();
-  const settings = initialData.settings;
   const savedBounds = initialData.windowBounds;
 
   const primaryDisplay = screen.getPrimaryDisplay();
@@ -144,7 +143,7 @@ function createWindow() {
     transparent: true,
     alwaysOnTop: false,
     skipTaskbar: true,
-    backgroundMaterial: 'acrylic', // Dynamic blur on Windows 11
+    backgroundMaterial: 'none',
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -152,7 +151,7 @@ function createWindow() {
     },
   });
 
-  win.setOpacity(settings.opacity);
+
 
   if (process.env.VITE_DEV_SERVER_URL) {
     win.loadURL(process.env.VITE_DEV_SERVER_URL);
@@ -250,7 +249,6 @@ ipcMain.handle('save-settings', (_event, settings) => {
 
   if (success && win) {
     win.setAlwaysOnTop(false);
-    win.setOpacity(settings.opacity);
   }
 
   // Set startup launch settings
@@ -272,10 +270,8 @@ ipcMain.handle('set-always-on-top', (_event, _alwaysOnTop) => {
   }
 });
 
-ipcMain.handle('set-opacity', (_event, opacity) => {
-  if (win) {
-    win.setOpacity(opacity);
-  }
+ipcMain.handle('set-opacity', (_event, _opacity) => {
+  // Handled via CSS variables in renderer
 });
 
 ipcMain.handle('minimize-window', () => {

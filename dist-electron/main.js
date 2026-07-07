@@ -96,9 +96,7 @@ function createTray() {
 	});
 }
 function createWindow() {
-	const initialData = readData();
-	const settings = initialData.settings;
-	const savedBounds = initialData.windowBounds;
+	const savedBounds = readData().windowBounds;
 	const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
 	let windowWidth = 960;
 	let windowHeight = 620;
@@ -138,14 +136,13 @@ function createWindow() {
 		transparent: true,
 		alwaysOnTop: false,
 		skipTaskbar: true,
-		backgroundMaterial: "acrylic",
+		backgroundMaterial: "none",
 		webPreferences: {
 			preload: path.join(__dirname, "preload.js"),
 			nodeIntegration: false,
 			contextIsolation: true
 		}
 	});
-	win.setOpacity(settings.opacity);
 	if (process.env.VITE_DEV_SERVER_URL) win.loadURL(process.env.VITE_DEV_SERVER_URL);
 	else win.loadFile(path.join(__dirname, "../dist/index.html"));
 	let saveBoundsTimeout = null;
@@ -210,10 +207,7 @@ ipcMain.handle("save-settings", (_event, settings) => {
 	const data = readData();
 	data.settings = settings;
 	const success = writeData(data);
-	if (success && win) {
-		win.setAlwaysOnTop(false);
-		win.setOpacity(settings.opacity);
-	}
+	if (success && win) win.setAlwaysOnTop(false);
 	try {
 		app.setLoginItemSettings({
 			openAtLogin: settings.openAtLogin,
@@ -227,9 +221,7 @@ ipcMain.handle("save-settings", (_event, settings) => {
 ipcMain.handle("set-always-on-top", (_event, _alwaysOnTop) => {
 	if (win) win.setAlwaysOnTop(false);
 });
-ipcMain.handle("set-opacity", (_event, opacity) => {
-	if (win) win.setOpacity(opacity);
-});
+ipcMain.handle("set-opacity", (_event, _opacity) => {});
 ipcMain.handle("minimize-window", () => {
 	if (win) win.minimize();
 });

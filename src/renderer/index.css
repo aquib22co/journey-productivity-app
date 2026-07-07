@@ -13,7 +13,7 @@
 }
 
 :root {
-  --bg-widget: rgba(9, 13, 22, 0.92);
+  --bg-widget: rgba(9, 13, 22, var(--widget-opacity, 0.95));
   /* Deep slate-blue, slightly transparent */
   --bg-card: rgba(18, 24, 38, 0.5);
   /* Sleek card background */
@@ -44,8 +44,9 @@
   --hm-level-4: #39d353;
 }
 
+html,
 body {
-  background: transparent;
+  background: transparent !important;
   color: var(--text-main);
   overflow: hidden;
   user-select: none;
@@ -87,7 +88,6 @@ textarea {
   border: 1px solid var(--border-light);
   border-radius: 12px;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(35px);
   overflow: hidden;
 }
 

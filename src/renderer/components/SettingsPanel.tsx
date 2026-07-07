@@ -1,118 +1,61 @@
-import React, { useRef } from 'react';
-import type { Settings, Task } from '../../shared/types';
-import { ShieldAlert, Download, Upload, Trash, RefreshCw } from 'lucide-react';
+import React, { useState } from 'react';
+import type { Settings } from '../../shared/types';
+import { ShieldAlert, Trash, RefreshCw, Save } from 'lucide-react';
 
 interface SettingsPanelProps {
   settings: Settings;
-  tasks: Task[];
   onUpdateSettings: (settings: Settings) => void;
-  onImportTasks: (tasks: Task[]) => void;
   onClearTasks: () => void;
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   settings,
-  tasks,
   onUpdateSettings,
-  onImportTasks,
   onClearTasks,
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-
+  const [draftSettings, setDraftSettings] = useState<Settings>(settings);
 
   const handleOpenAtLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdateSettings({
-      ...settings,
+    setDraftSettings({
+      ...draftSettings,
       openAtLogin: e.target.checked,
     });
   };
 
   const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseFloat(e.target.value);
-    onUpdateSettings({
-      ...settings,
+    setDraftSettings({
+      ...draftSettings,
       opacity: val,
     });
   };
 
   const handleThresholdChange = (key: 'low' | 'medium' | 'high', value: number) => {
-    onUpdateSettings({
-      ...settings,
+    setDraftSettings({
+      ...draftSettings,
       heatmapThresholds: {
-        ...settings.heatmapThresholds,
+        ...draftSettings.heatmapThresholds,
         [key]: Math.max(1, value),
       },
     });
   };
 
-  const handleExportData = () => {
-    try {
-      const dataStr = JSON.stringify({ tasks, settings }, null, 2);
-      const dataBlob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(dataBlob);
-      
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `journey_widget_export_${new Date().toISOString().split('T')[0]}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      alert('Export failed: ' + error);
-    }
-  };
-
-  const handleImportData = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    const file = files[0];
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (parsed && Array.isArray(parsed.tasks)) {
-          // Validation pass
-          const validTasks = parsed.tasks.filter((t: any) => t.id && t.title && t.createdAt);
-          if (validTasks.length > 0) {
-            onImportTasks(validTasks);
-            
-            // If settings were exported, import those as well
-            if (parsed.settings && parsed.settings.heatmapThresholds) {
-              onUpdateSettings({
-                ...settings,
-                ...parsed.settings
-              });
-            }
-            alert(`Imported ${validTasks.length} tasks successfully!`);
-          } else {
-            alert('No valid tasks found in the JSON file.');
-          }
-        } else {
-          alert('Invalid format. Export file must contain a tasks array.');
-        }
-      } catch (error) {
-        alert('Parsing JSON failed: ' + error);
-      }
-    };
-    reader.readAsText(file);
-    // Reset file input value
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+  const handleSave = () => {
+    onUpdateSettings(draftSettings);
+    alert('Settings saved successfully!');
   };
 
   const handleResetSettings = () => {
     if (window.confirm('Reset all widget settings to defaults?')) {
-      onUpdateSettings({
+      const defaultSettings: Settings = {
         alwaysOnTop: true,
         opacity: 0.95,
         openAtLogin: false,
         theme: 'dark',
         heatmapThresholds: { low: 1, medium: 3, high: 5 },
-      });
+      };
+      setDraftSettings(defaultSettings);
+      onUpdateSettings(defaultSettings);
     }
   };
 
@@ -131,8 +74,6 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           Widget Configuration
         </div>
 
-
-
         <div className="settings-row">
           <div className="settings-row-label">
             <span>Launch on Startup</span>
@@ -141,7 +82,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
           <label className="switch">
             <input 
               type="checkbox" 
-              checked={settings.openAtLogin} 
+              checked={draftSettings.openAtLogin} 
               onChange={handleOpenAtLoginChange} 
             />
             <span className="slider"></span>
@@ -160,11 +101,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               min="0.3" 
               max="1.0" 
               step="0.05" 
-              value={settings.opacity} 
+              value={draftSettings.opacity} 
               onChange={handleOpacityChange} 
             />
             <span style={{ fontSize: '12px', width: '30px', textAlign: 'right', fontWeight: 600 }}>
-              {Math.round(settings.opacity * 100)}%
+              {Math.round(draftSettings.opacity * 100)}%
             </span>
           </div>
         </div>
@@ -183,7 +124,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               type="number" 
               className="input-field" 
               style={{ padding: '6px' }}
-              value={settings.heatmapThresholds.low}
+              value={draftSettings.heatmapThresholds.low}
               onChange={(e) => handleThresholdChange('low', parseInt(e.target.value) || 1)}
               min="1"
             />
@@ -195,7 +136,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               type="number" 
               className="input-field" 
               style={{ padding: '6px' }}
-              value={settings.heatmapThresholds.medium}
+              value={draftSettings.heatmapThresholds.medium}
               onChange={(e) => handleThresholdChange('medium', parseInt(e.target.value) || 3)}
               min="1"
             />
@@ -207,7 +148,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               type="number" 
               className="input-field" 
               style={{ padding: '6px' }}
-              value={settings.heatmapThresholds.high}
+              value={draftSettings.heatmapThresholds.high}
               onChange={(e) => handleThresholdChange('high', parseInt(e.target.value) || 5)}
               min="1"
             />
@@ -215,30 +156,32 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         </div>
       </div>
 
+      {/* Save Settings Action Button */}
+      <button 
+        type="button" 
+        onClick={handleSave} 
+        className="btn" 
+        style={{ 
+          width: '100%', 
+          padding: '12px', 
+          fontSize: '14px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          gap: '8px',
+          marginTop: '4px'
+        }}
+      >
+        <Save size={16} /> Save Settings
+      </button>
+
       {/* Data Backup and Reset Group */}
-      <div className="settings-group">
+      <div className="settings-group" style={{ marginTop: 'auto' }}>
         <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Data & Backup
+          Data & Reset
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <button type="button" onClick={handleExportData} className="btn btn-secondary" style={{ fontSize: '12px', padding: '6px 10px' }}>
-              <Download size={13} /> Export JSON
-            </button>
-            
-            <button type="button" onClick={() => fileInputRef.current?.click()} className="btn btn-secondary" style={{ fontSize: '12px', padding: '6px 10px' }}>
-              <Upload size={13} /> Import JSON
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              style={{ display: 'none' }}
-              onChange={handleImportData}
-            />
-          </div>
-
           <button type="button" onClick={handleResetSettings} className="btn btn-secondary" style={{ fontSize: '12px', padding: '6px 10px', border: '1px solid rgba(255,255,255,0.05)' }}>
             <RefreshCw size={13} /> Reset Settings
           </button>
@@ -250,7 +193,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
       </div>
 
       {/* Footer / Info */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '9px', color: 'var(--text-dim)', marginTop: 'auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: '9px', color: 'var(--text-dim)' }}>
         <ShieldAlert size={10} />
         <span>Data is stored locally on your device.</span>
       </div>

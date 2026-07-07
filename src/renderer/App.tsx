@@ -112,15 +112,7 @@ const App: React.FC = () => {
     handleSaveTasks([]);
   };
 
-  const handleImportTasks = (importedTasks: Task[]) => {
-    const taskMap = new Map<string, Task>();
-    tasks.forEach(t => taskMap.set(t.id, t));
-    importedTasks.forEach(t => taskMap.set(t.id, t));
-    const merged = Array.from(taskMap.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-    handleSaveTasks(merged);
-  };
+
 
   // Custom title bar buttons
   const handleMinimize = () => {
@@ -216,7 +208,10 @@ const App: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="widget-container">
+      <div 
+        className="widget-container" 
+        style={{ background: `rgba(9, 13, 22, ${settings.opacity})` }}
+      >
         {/* Frameless Drag Handle Header */}
         <header className="widget-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -329,9 +324,7 @@ const App: React.FC = () => {
             <div style={{ flex: 1, overflowY: 'auto' }} className="no-drag">
               <SettingsPanel
                 settings={settings}
-                tasks={tasks}
                 onUpdateSettings={handleSaveSettings}
-                onImportTasks={handleImportTasks}
                 onClearTasks={handleClearTasks}
               />
             </div>
