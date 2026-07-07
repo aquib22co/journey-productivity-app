@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { Task, Settings } from '../shared/types';
 import { TaskList } from './components/TaskList';
-import { AddTaskCard } from './components/AddTaskCard';
 import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle } from 'lucide-react';
@@ -443,10 +442,9 @@ const App: React.FC = () => {
           ) : (
             /* Side-by-Side Horizontal Grid Layout */
             <div className="dashboard-grid">
-              {/* Left Column: Heatmap and Add Task Card */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', minHeight: 0, minWidth: 0 }}>
+              {/* Left Column: Heatmap */}
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
                 <Heatmap tasks={tasks} settings={settings} />
-                <AddTaskCard onAddTask={handleAddTask} />
               </div>
 
               {/* Right Column: Task List Card */}
@@ -455,6 +453,7 @@ const App: React.FC = () => {
                   tasks={tasks}
                   onUpdateTask={handleUpdateTask}
                   onDeleteTask={handleDeleteTask}
+                  onAddTask={handleAddTask}
                 />
               </div>
             </div>

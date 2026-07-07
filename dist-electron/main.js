@@ -1,39 +1,46 @@
-import { BrowserWindow as e, Menu as t, Tray as n, app as r, ipcMain as i, nativeImage as a, screen as o } from "electron";
-import * as s from "path";
-import * as c from "fs";
-import { fileURLToPath as l } from "url";
+import { BrowserWindow, Menu, Tray, app, ipcMain, nativeImage, screen } from "electron";
+import * as path from "path";
+import * as fs from "fs";
+import { fileURLToPath } from "url";
 //#region src/main/main.ts
-var u = l(import.meta.url), d = s.dirname(u), f = null, p = null, m = null, h = s.join(r.getPath("userData"), "journey-widget-data.json"), g = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC";
-function _() {
+var __filename = fileURLToPath(import.meta.url);
+var __dirname = path.dirname(__filename);
+var win = null;
+var badgeWin = null;
+var tray = null;
+var dataFilePath = path.join(app.getPath("userData"), "journey-widget-data.json");
+var defaultIconBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC";
+function readData() {
 	try {
-		if (c.existsSync(h)) {
-			let e = c.readFileSync(h, "utf-8"), t = JSON.parse(e);
+		if (fs.existsSync(dataFilePath)) {
+			const content = fs.readFileSync(dataFilePath, "utf-8");
+			const parsed = JSON.parse(content);
 			return {
-				tasks: Array.isArray(t.tasks) ? t.tasks : [],
+				tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
 				settings: {
-					alwaysOnTop: !0,
+					alwaysOnTop: true,
 					opacity: .95,
-					openAtLogin: !1,
+					openAtLogin: false,
 					theme: "dark",
 					heatmapThresholds: {
 						low: 1,
 						medium: 3,
 						high: 5
 					},
-					...t.settings || {}
+					...parsed.settings || {}
 				},
-				windowBounds: t.windowBounds || null
+				windowBounds: parsed.windowBounds || null
 			};
 		}
-	} catch (e) {
-		console.error("Error reading data:", e);
+	} catch (error) {
+		console.error("Error reading data:", error);
 	}
 	return {
 		tasks: [],
 		settings: {
-			alwaysOnTop: !0,
+			alwaysOnTop: true,
 			opacity: .95,
-			openAtLogin: !1,
+			openAtLogin: false,
 			theme: "dark",
 			heatmapThresholds: {
 				low: 1,
@@ -44,182 +51,266 @@ function _() {
 		windowBounds: null
 	};
 }
-function v(e) {
+function writeData(data) {
 	try {
-		return c.writeFileSync(h, JSON.stringify(e, null, 2), "utf-8"), !0;
-	} catch (e) {
-		return console.error("Error writing data:", e), !1;
+		fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
+		return true;
+	} catch (error) {
+		console.error("Error writing data:", error);
+		return false;
 	}
 }
-function y() {
-	m = new n(a.createFromDataURL(g));
-	let e = t.buildFromTemplate([
+function createTray() {
+	tray = new Tray(nativeImage.createFromDataURL(defaultIconBase64));
+	const contextMenu = Menu.buildFromTemplate([
 		{
 			label: "Show Widget",
 			click: () => {
-				f && (f.show(), f.focus());
+				if (win) {
+					win.show();
+					win.focus();
+				}
 			}
 		},
 		{
 			label: "Hide Widget",
 			click: () => {
-				f && f.hide();
+				if (win) win.hide();
 			}
 		},
 		{ type: "separator" },
 		{
 			label: "Quit",
 			click: () => {
-				r.quit();
+				app.quit();
 			}
 		}
 	]);
-	m.setToolTip("Journey - Activity Widget"), m.setContextMenu(e), m.on("click", () => {
-		f && (f.isVisible() ? f.hide() : (f.show(), f.focus()));
+	tray.setToolTip("Journey - Activity Widget");
+	tray.setContextMenu(contextMenu);
+	tray.on("click", () => {
+		if (win) if (win.isVisible()) win.hide();
+		else {
+			win.show();
+			win.focus();
+		}
 	});
 }
-function b() {
-	let t = _().windowBounds, { width: n, height: r, x: i, y: a } = o.getPrimaryDisplay().workArea, c = 960, l = 620;
-	t && typeof t.width == "number" && typeof t.height == "number" && (c = Math.max(800, Math.min(1400, t.width)), l = Math.max(500, Math.min(1e3, t.height)));
-	let u = i + n - c - 24, p = a + r - l - 24;
-	if (t && typeof t.x == "number" && typeof t.y == "number") {
-		let e = t.x + c / 2, n = t.y + l / 2, r = !1, i = o.getAllDisplays();
-		for (let t of i) {
-			let i = t.bounds;
-			if (e >= i.x && e <= i.x + i.width && n >= i.y && n <= i.y + i.height) {
-				r = !0;
+function createWindow() {
+	const savedBounds = readData().windowBounds;
+	const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
+	let windowWidth = 960;
+	let windowHeight = 620;
+	if (savedBounds && typeof savedBounds.width === "number" && typeof savedBounds.height === "number") {
+		windowWidth = Math.max(800, Math.min(1400, savedBounds.width));
+		windowHeight = Math.max(500, Math.min(1e3, savedBounds.height));
+	}
+	let windowX = x + width - windowWidth - 24;
+	let windowY = y + height - windowHeight - 24;
+	if (savedBounds && typeof savedBounds.x === "number" && typeof savedBounds.y === "number") {
+		const savedCenterX = savedBounds.x + windowWidth / 2;
+		const savedCenterY = savedBounds.y + windowHeight / 2;
+		let isVisible = false;
+		const displays = screen.getAllDisplays();
+		for (const display of displays) {
+			const bounds = display.bounds;
+			if (savedCenterX >= bounds.x && savedCenterX <= bounds.x + bounds.width && savedCenterY >= bounds.y && savedCenterY <= bounds.y + bounds.height) {
+				isVisible = true;
 				break;
 			}
 		}
-		r && (u = t.x, p = t.y);
+		if (isVisible) {
+			windowX = savedBounds.x;
+			windowY = savedBounds.y;
+		}
 	}
-	f = new e({
-		x: u,
-		y: p,
-		width: c,
-		height: l,
+	win = new BrowserWindow({
+		x: windowX,
+		y: windowY,
+		width: windowWidth,
+		height: windowHeight,
 		minWidth: 800,
 		minHeight: 500,
 		maxWidth: 1400,
 		maxHeight: 1e3,
-		frame: !1,
-		transparent: !0,
-		alwaysOnTop: !1,
-		skipTaskbar: !0,
+		frame: false,
+		transparent: true,
+		alwaysOnTop: false,
+		skipTaskbar: true,
 		backgroundMaterial: "none",
 		webPreferences: {
-			preload: s.join(d, "preload.mjs"),
-			nodeIntegration: !1,
-			contextIsolation: !0
+			preload: path.join(__dirname, "preload.mjs"),
+			nodeIntegration: false,
+			contextIsolation: true
 		}
-	}), process.env.VITE_DEV_SERVER_URL ? f.loadURL(process.env.VITE_DEV_SERVER_URL) : f.loadFile(s.join(d, "../dist/index.html"));
-	let m = null, h = () => {
-		m && clearTimeout(m), m = setTimeout(() => {
-			if (f) try {
-				let e = f.getBounds(), t = _();
-				t.windowBounds = {
-					x: e.x,
-					y: e.y,
-					width: e.width,
-					height: e.height
-				}, v(t);
-			} catch (e) {
-				console.error("Failed to save window bounds:", e);
+	});
+	if (process.env.VITE_DEV_SERVER_URL) win.loadURL(process.env.VITE_DEV_SERVER_URL);
+	else win.loadFile(path.join(__dirname, "../dist/index.html"));
+	let saveBoundsTimeout = null;
+	const saveWindowBoundsDebounced = () => {
+		if (saveBoundsTimeout) clearTimeout(saveBoundsTimeout);
+		saveBoundsTimeout = setTimeout(() => {
+			if (!win) return;
+			try {
+				const bounds = win.getBounds();
+				const data = readData();
+				data.windowBounds = {
+					x: bounds.x,
+					y: bounds.y,
+					width: bounds.width,
+					height: bounds.height
+				};
+				writeData(data);
+			} catch (error) {
+				console.error("Failed to save window bounds:", error);
 			}
 		}, 500);
 	};
-	f.on("move", h), f.on("resize", h), f.on("closed", () => {
-		m && clearTimeout(m), f = null;
+	win.on("move", saveWindowBoundsDebounced);
+	win.on("resize", saveWindowBoundsDebounced);
+	win.on("closed", () => {
+		if (saveBoundsTimeout) clearTimeout(saveBoundsTimeout);
+		win = null;
 	});
 }
-function x() {
-	if (console.log("[Main] createBadgeWindow called"), p) {
+function createBadgeWindow() {
+	console.log("[Main] createBadgeWindow called");
+	if (badgeWin) {
 		console.log("[Main] badgeWin already exists");
 		return;
 	}
 	try {
-		let { width: t, height: n } = o.getPrimaryDisplay().workArea, r = t - 70 - 24, i = n - 70 - 24;
-		if (console.log(`[Main] Badge coordinates calculated: x=${r}, y=${i}, size=70`), p = new e({
-			x: r,
-			y: i,
-			width: 70,
-			height: 70,
-			frame: !1,
-			transparent: !0,
-			alwaysOnTop: !1,
-			skipTaskbar: !0,
-			resizable: !1,
+		const { width, height } = screen.getPrimaryDisplay().workArea;
+		const badgeSize = 70;
+		const badgeX = width - badgeSize - 24;
+		const badgeY = height - badgeSize - 24;
+		console.log(`[Main] Badge coordinates calculated: x=${badgeX}, y=${badgeY}, size=${badgeSize}`);
+		badgeWin = new BrowserWindow({
+			x: badgeX,
+			y: badgeY,
+			width: badgeSize,
+			height: badgeSize,
+			frame: false,
+			transparent: true,
+			alwaysOnTop: false,
+			skipTaskbar: true,
+			resizable: false,
 			backgroundMaterial: "none",
 			webPreferences: {
-				preload: s.join(d, "preload.mjs"),
-				nodeIntegration: !1,
-				contextIsolation: !0
+				preload: path.join(__dirname, "preload.mjs"),
+				nodeIntegration: false,
+				contextIsolation: true
 			}
-		}), process.env.VITE_DEV_SERVER_URL) {
-			let e = `${process.env.VITE_DEV_SERVER_URL}?mode=badge`;
-			console.log(`[Main] Loading dev server URL: ${e}`), p.loadURL(e);
-		} else {
-			let e = s.join(d, "../dist/index.html");
-			console.log(`[Main] Loading production index file: ${e}`), p.loadFile(e, { query: { mode: "badge" } });
-		}
-		p.on("closed", () => {
-			console.log("[Main] badgeWin closed"), p = null;
 		});
-	} catch (e) {
-		console.error("[Main] Exception caught in createBadgeWindow:", e);
+		if (process.env.VITE_DEV_SERVER_URL) {
+			const devUrl = `${process.env.VITE_DEV_SERVER_URL}?mode=badge`;
+			console.log(`[Main] Loading dev server URL: ${devUrl}`);
+			badgeWin.loadURL(devUrl);
+		} else {
+			const buildPath = path.join(__dirname, "../dist/index.html");
+			console.log(`[Main] Loading production index file: ${buildPath}`);
+			badgeWin.loadFile(buildPath, { query: { mode: "badge" } });
+		}
+		badgeWin.on("closed", () => {
+			console.log("[Main] badgeWin closed");
+			badgeWin = null;
+		});
+	} catch (error) {
+		console.error("[Main] Exception caught in createBadgeWindow:", error);
 	}
 }
-r.requestSingleInstanceLock({ myKey: "journey-tracker" }) ? (r.on("second-instance", () => {
-	f && (f.isMinimized() && f.restore(), f.isVisible() || f.show(), f.focus());
-}), r.whenReady().then(() => {
-	b(), y(), r.on("activate", () => {
-		e.getAllWindows().length === 0 && b();
+if (!app.requestSingleInstanceLock({ myKey: "journey-tracker" })) app.quit();
+else {
+	app.on("second-instance", () => {
+		if (win) {
+			if (win.isMinimized()) win.restore();
+			if (!win.isVisible()) win.show();
+			win.focus();
+		}
 	});
-})) : r.quit(), r.on("window-all-closed", () => {
-	process.platform !== "darwin" && r.quit();
-}), i.handle("get-tasks", () => _().tasks), i.handle("save-tasks", (e, t) => {
-	let n = _();
-	return n.tasks = t, v(n);
-}), i.handle("get-settings", () => _().settings), i.handle("save-settings", (e, t) => {
-	let n = _();
-	n.settings = t;
-	let i = v(n);
-	i && f && f.setAlwaysOnTop(!1);
-	try {
-		r.setLoginItemSettings({
-			openAtLogin: t.openAtLogin,
-			path: r.getPath("exe")
+	app.whenReady().then(() => {
+		createWindow();
+		createTray();
+		app.on("activate", () => {
+			if (BrowserWindow.getAllWindows().length === 0) createWindow();
 		});
-	} catch (e) {
-		console.error("Failed to set login items settings:", e);
+	});
+}
+app.on("window-all-closed", () => {
+	if (process.platform !== "darwin") app.quit();
+});
+ipcMain.handle("get-tasks", () => {
+	return readData().tasks;
+});
+ipcMain.handle("save-tasks", (_event, tasks) => {
+	const data = readData();
+	data.tasks = tasks;
+	return writeData(data);
+});
+ipcMain.handle("get-settings", () => {
+	return readData().settings;
+});
+ipcMain.handle("save-settings", (_event, settings) => {
+	const data = readData();
+	data.settings = settings;
+	const success = writeData(data);
+	if (success && win) win.setAlwaysOnTop(false);
+	try {
+		app.setLoginItemSettings({
+			openAtLogin: settings.openAtLogin,
+			path: app.getPath("exe")
+		});
+	} catch (error) {
+		console.error("Failed to set login items settings:", error);
 	}
-	return i;
-}), i.handle("set-always-on-top", (e, t) => {
-	f && f.setAlwaysOnTop(!1);
-}), i.handle("set-opacity", (e, t) => {}), i.handle("minimize-window", () => {
-	if (console.log("[Main] IPC minimize-window handler invoked"), f) try {
-		console.log("[Main] Hiding main window..."), f.hide(), p ? (console.log("[Main] badgeWin is already spawned. Showing badge..."), p.show()) : (console.log("[Main] badgeWin is null. Spawning badge..."), x());
-	} catch (e) {
-		console.error("[Main] Error handling minimize-window IPC:", e);
+	return success;
+});
+ipcMain.handle("set-always-on-top", (_event, _alwaysOnTop) => {
+	if (win) win.setAlwaysOnTop(false);
+});
+ipcMain.handle("set-opacity", (_event, _opacity) => {});
+ipcMain.handle("minimize-window", () => {
+	console.log("[Main] IPC minimize-window handler invoked");
+	if (win) try {
+		console.log("[Main] Hiding main window...");
+		win.hide();
+		if (!badgeWin) {
+			console.log("[Main] badgeWin is null. Spawning badge...");
+			createBadgeWindow();
+		} else {
+			console.log("[Main] badgeWin is already spawned. Showing badge...");
+			badgeWin.show();
+		}
+	} catch (error) {
+		console.error("[Main] Error handling minimize-window IPC:", error);
 	}
 	else console.warn("[Main] Cannot minimize: win is null!");
-}), i.handle("hide-window", () => {
-	f && f.hide();
-}), i.handle("close-window", () => {
-	if (console.log("[Main] IPC close-window handler invoked, quitting app..."), p) try {
-		p.close();
+});
+ipcMain.handle("hide-window", () => {
+	if (win) win.hide();
+});
+ipcMain.handle("close-window", () => {
+	console.log("[Main] IPC close-window handler invoked, quitting app...");
+	if (badgeWin) try {
+		badgeWin.close();
 	} catch {}
-	if (f) try {
-		f.close();
+	if (win) try {
+		win.close();
 	} catch {}
-	r.quit();
-}), i.handle("restore-main-window", () => {
-	p && p.hide(), f && (f.show(), f.focus());
-}), i.on("drag-window", (t, { dx: n, dy: r }) => {
-	let i = e.fromWebContents(t.sender);
-	if (i) {
-		let [e, t] = i.getPosition();
-		i.setPosition(Math.round(e + n), Math.round(t + r));
+	app.quit();
+});
+ipcMain.handle("restore-main-window", () => {
+	if (badgeWin) badgeWin.hide();
+	if (win) {
+		win.show();
+		win.focus();
+	}
+});
+ipcMain.on("drag-window", (event, { dx, dy }) => {
+	const senderWin = BrowserWindow.fromWebContents(event.sender);
+	if (senderWin) {
+		const [x, y] = senderWin.getPosition();
+		senderWin.setPosition(Math.round(x + dx), Math.round(y + dy));
 	}
 });
 //#endregion

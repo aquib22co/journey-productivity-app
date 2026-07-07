@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Task } from '../../shared/types';
 import { TaskDetailPanel } from './TaskDetailPanel';
+import { AddTaskPanel } from './AddTaskPanel';
 import {
   Trash2,
   Calendar,
@@ -10,7 +11,8 @@ import {
   BookOpen,
   HelpCircle,
   ListTodo,
-  Star
+  Star,
+  Plus
 } from 'lucide-react';
 
 // Helper to get category icons
@@ -34,14 +36,22 @@ interface TaskListProps {
   tasks: Task[];
   onUpdateTask: (task: Task) => void;
   onDeleteTask: (id: string) => void;
+  onAddTask: (
+    title: string,
+    description?: string,
+    dueDate?: string,
+    category?: 'work' | 'social' | 'study' | 'general',
+    time?: string
+  ) => void;
 }
 
-export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask }) => {
+export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, onAddTask }) => {
 
   // Filter & Sort states
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
   const [sortBy] = useState<'created' | 'time' | 'due'>('created');
   const [detailedTask, setDetailedTask] = useState<Task | null>(null);
+  const [isAddingTask, setIsAddingTask] = useState(false);
 
   // Animation state
   const [ripplingTaskId, setRipplingTaskId] = useState<string | null>(null);
@@ -120,10 +130,33 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
           <ListTodo size={18} style={{ color: '#0084ff' }} />
           <span className="widget-card-title">Day Wise Task Manager</span>
         </div>
+        {!detailedTask && !isAddingTask && (
+          <button
+            type="button"
+            onClick={() => setIsAddingTask(true)}
+            className="win-btn"
+            style={{
+              width: '28px',
+              height: '28px',
+              borderRadius: '6px',
+              background: 'rgba(0, 132, 255, 0.08)',
+              color: '#0084ff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: 'none',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
+            }}
+            title="Add Task"
+          >
+            <Plus size={16} />
+          </button>
+        )}
       </div>
 
       {/* Sub-Header: Date & Filters */}
-      {!detailedTask && (
+      {!detailedTask && !isAddingTask && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '2px 0 10px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Calendar size={14} style={{ color: '#0084ff' }} />
@@ -159,7 +192,15 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
 
       {/* Task Rows List */}
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 2 }}>
-        {detailedTask ? (
+        {isAddingTask ? (
+          <AddTaskPanel
+            onCancel={() => setIsAddingTask(false)}
+            onSave={(title, description, dueDate, category, time) => {
+              onAddTask(title, description, dueDate, category, time);
+              setIsAddingTask(false);
+            }}
+          />
+        ) : detailedTask ? (
           <TaskDetailPanel
             task={detailedTask}
             onCancel={() => setDetailedTask(null)}
