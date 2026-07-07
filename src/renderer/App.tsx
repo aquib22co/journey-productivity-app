@@ -448,6 +448,7 @@ const App: React.FC = () => {
                 <Heatmap tasks={tasks} settings={settings} />
                 <CompletedTasksPanel
                   tasks={tasks}
+                  onUpdateTask={handleUpdateTask}
                 />
               </div>
 

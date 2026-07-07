@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Task } from '../../shared/types';
 import { DatePicker } from './DatePicker';
+import { Button } from '@/components/ui/button';
 import {
   Calendar,
   ChevronLeft,
@@ -19,6 +20,7 @@ import {
 
 interface CompletedTasksPanelProps {
   tasks: Task[];
+  onUpdateTask: (task: Task) => void;
 }
 
 const getLocalDateString = (date: Date) => {
@@ -78,7 +80,10 @@ const getCategoryStyles = (category?: 'work' | 'social' | 'study' | 'general') =
   }
 };
 
-export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({ tasks }) => {
+export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
+  tasks,
+  onUpdateTask
+}) => {
   const [startDate, setStartDate] = useState(getSevenDaysAgoString);
   const [endDate, setEndDate] = useState(() => getLocalDateString(new Date()));
   const [detailedTask, setDetailedTask] = useState<Task | null>(null);
@@ -201,6 +206,28 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({ tasks 
                 <ChevronLeft size={16} />
               </button>
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)' }}>Task Details</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  onUpdateTask({
+                    ...detailedTask,
+                    completedAt: null
+                  });
+                  setDetailedTask(null);
+                }}
+                style={{
+                  marginLeft: 'auto',
+                  borderColor: 'rgba(244, 63, 94, 0.2)',
+                  color: '#f43f5e',
+                  background: 'rgba(244, 63, 94, 0.04)',
+                  padding: '2px 8px',
+                  height: '24px',
+                  fontSize: '10.5px'
+                }}
+              >
+                Mark Pending
+              </Button>
             </div>
 
             {/* Task Information */}

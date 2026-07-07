@@ -48,7 +48,6 @@ interface TaskListProps {
 export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDeleteTask, onAddTask }) => {
 
   // Filter & Sort states
-  const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
   const [sortBy] = useState<'created' | 'time' | 'due'>('created');
   const [detailedTask, setDetailedTask] = useState<Task | null>(null);
   const [isAddingTask, setIsAddingTask] = useState(false);
@@ -99,12 +98,8 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  // Filter tasks
-  const filteredTasks = tasks.filter(task => {
-    if (filter === 'pending') return !task.completedAt;
-    if (filter === 'completed') return !!task.completedAt;
-    return true; // all
-  });
+  // Filter tasks to only include pending/uncompleted tasks
+  const filteredTasks = tasks.filter(task => !task.completedAt);
 
   // Sort tasks
   const sortedTasks = [...filteredTasks].sort((a, b) => {
@@ -155,7 +150,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
         )}
       </div>
 
-      {/* Sub-Header: Date & Filters */}
+      {/* Sub-Header: Date */}
       {!detailedTask && !isAddingTask && (
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '2px 0 10px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -163,29 +158,6 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
             <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0084ff' }}>
               {todayFormatted}
             </span>
-          </div>
-          <div className="filter-pills">
-            <button
-              type="button"
-              onClick={() => setFilter('all')}
-              className={`filter-pill ${filter === 'all' ? 'active' : ''}`}
-            >
-              All
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter('pending')}
-              className={`filter-pill ${filter === 'pending' ? 'active' : ''}`}
-            >
-              Pending
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter('completed')}
-              className={`filter-pill ${filter === 'completed' ? 'active' : ''}`}
-            >
-              Completed
-            </button>
           </div>
         </div>
       )}
@@ -224,7 +196,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 10px', color: 'var(--text-dim)', gap: '4px' }}>
             <Check size={24} style={{ opacity: 0.3 }} />
             <span style={{ fontSize: '12px', fontWeight: 600 }}>No tasks found</span>
-            <span style={{ fontSize: '10px' }}>Filter: {filter}</span>
+            <span style={{ fontSize: '10px' }}>Enjoy your day!</span>
           </div>
         ) : (
           sortedTasks.map(task => {
