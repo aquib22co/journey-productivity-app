@@ -1,14 +1,20 @@
 import React, { useState } from 'react';
 import type { Task } from '../../shared/types';
 import { DatePicker } from './DatePicker';
-import { getCategoryIcon } from './TaskList';
 import {
   Calendar,
   ChevronLeft,
   History,
   CheckCircle2,
   CalendarCheck,
-  Tag
+  Tag,
+  Check,
+  Clock,
+  ChevronRight,
+  Puzzle,
+  ArrowLeftRight,
+  FileText,
+  HelpCircle
 } from 'lucide-react';
 
 interface CompletedTasksPanelProps {
@@ -28,9 +34,51 @@ const getSevenDaysAgoString = () => {
   return getLocalDateString(d);
 };
 
-export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
-  tasks
-}) => {
+// Custom category icons for history cards
+const getHistoryCategoryIcon = (category?: 'work' | 'social' | 'study' | 'general') => {
+  switch (category) {
+    case 'work':
+      return <FileText size={15} />;
+    case 'social':
+      return <Puzzle size={15} />;
+    case 'study':
+      return <ArrowLeftRight size={15} />;
+    default:
+      return <HelpCircle size={15} />;
+  }
+};
+
+// Custom category color styles matching the image design system
+const getCategoryStyles = (category?: 'work' | 'social' | 'study' | 'general') => {
+  switch (category) {
+    case 'work':
+      return {
+        border: '1px solid rgba(0, 132, 255, 0.15)',
+        background: 'rgba(0, 132, 255, 0.04)',
+        color: '#0084ff'
+      };
+    case 'social':
+      return {
+        border: '1px solid rgba(168, 85, 247, 0.15)',
+        background: 'rgba(168, 85, 247, 0.04)',
+        color: '#a855f7'
+      };
+    case 'study':
+      return {
+        border: '1px solid rgba(249, 115, 22, 0.15)',
+        background: 'rgba(249, 115, 22, 0.04)',
+        color: '#f97316'
+      };
+    default:
+      return {
+        border: '1px solid rgba(148, 163, 184, 0.15)',
+        background: 'rgba(148, 163, 184, 0.04)',
+        color: '#94a3b8'
+      };
+  }
+};
+
+export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({ tasks }) => {
   const [startDate, setStartDate] = useState(getSevenDaysAgoString);
   const [endDate, setEndDate] = useState(() => getLocalDateString(new Date()));
   const [detailedTask, setDetailedTask] = useState<Task | null>(null);
@@ -70,14 +118,35 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
     return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
   });
 
+  const subtitleText = sortedCompletedTasks.length > 0
+    ? "All your activities are completed. Great job! "
+    : "No activities completed for this period.";
+
   return (
-    <div className="widget-card" style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
+    <div className="widget-card" style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px 18px' }}>
 
       {/* Header */}
-      <div className="widget-card-header" style={{ marginBottom: '4px' }}>
+      <div className="widget-card-header" style={{ marginBottom: '0px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <History size={18} style={{ color: '#0084ff' }} />
-          <span className="widget-card-title">Activity History</span>
+          {/* Circular Icon block */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '28px',
+            height: '28px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, rgba(0, 132, 255, 0.2), rgba(0, 70, 255, 0.4))',
+            border: '1px solid rgba(0, 132, 255, 0.3)',
+            color: '#0084ff',
+            flexShrink: 0
+          }}>
+            <History size={14} />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+            <span className="widget-card-title" style={{ fontSize: '14px', fontWeight: '700', lineHeight: 1.2 }}>Activity History</span>
+            <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{subtitleText}</span>
+          </div>
         </div>
         {!detailedTask && (
           <button
@@ -88,18 +157,18 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
               width: '28px',
               height: '28px',
               borderRadius: '6px',
-              background: showFilter ? 'rgba(0, 132, 255, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+              background: showFilter ? 'rgba(0, 132, 255, 0.15)' : 'rgba(255, 255, 255, 0.02)',
               color: showFilter ? 'var(--accent-color)' : 'var(--text-muted)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: 'none',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               cursor: 'pointer',
               transition: 'all 0.15s ease'
             }}
             title="Filter by Date Range"
           >
-            <Calendar size={14} />
+            <Calendar size={13} />
           </button>
         )}
       </div>
@@ -158,7 +227,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
                     <span style={{ color: 'var(--text-muted)' }}>Category:</span>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', textTransform: 'capitalize', color: 'var(--text-main)', fontWeight: 500 }}>
                       <span className={`cat-badge cat-${detailedTask.category}`} style={{ width: '16px', height: '16px', borderRadius: '4px' }}>
-                        {getCategoryIcon(detailedTask.category)}
+                        {getHistoryCategoryIcon(detailedTask.category)}
                       </span>
                       {detailedTask.category}
                     </span>
@@ -199,7 +268,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
           </div>
         ) : (
           /* Normal List View */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', height: '100%' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
             {/* Filter Mode Selector & Pickers Row */}
             {showFilter && (
               <div style={{ display: 'flex', gap: '6px', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.03)', paddingBottom: '8px', animation: 'fadeIn 0.15s ease' }}>
@@ -223,71 +292,135 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
               </div>
             )}
 
-            {/* Completed Tasks List Viewport */}
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px', paddingRight: '2px' }}>
+            {/* Completed Tasks List Viewport with Timeline */}
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px', paddingRight: '2px', position: 'relative' }}>
               {sortedCompletedTasks.length === 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 10px', color: 'var(--text-dim)', gap: '4px', textAlign: 'center' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px 10px', color: 'var(--text-dim)', gap: '4px', textAlign: 'center', margin: 'auto' }}>
                   <CheckCircle2 size={24} style={{ opacity: 0.3 }} />
                   <span style={{ fontSize: '11px', fontWeight: 600 }}>No completed tasks</span>
                   <span style={{ fontSize: '9px' }}>Try selecting a different date filter</span>
                 </div>
               ) : (
-                sortedCompletedTasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="task-row"
-                    onClick={() => setDetailedTask(task)}
-                    style={{
-                      background: 'rgba(255, 255, 255, 0.015)',
-                      border: '1px solid rgba(255, 255, 255, 0.02)',
-                      borderRadius: '8px',
-                      padding: '8px 10px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '10px',
-                      cursor: 'pointer',
-                      transition: 'border-color 0.2s ease',
-                    }}
-                  >
-                    {/* Completion Icon */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success-color)', flexShrink: 0 }}>
-                      <CheckCircle2 size={16} className="fill-emerald-500/10" />
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative' }}>
+                  {sortedCompletedTasks.map((task, index) => {
+                    const catStyles = getCategoryStyles(task.category);
+                    return (
+                      <div key={task.id} style={{ display: 'flex', gap: '16px', alignItems: 'center', position: 'relative' }}>
 
-                    {/* Title & Info */}
-                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                      <span className="task-title" style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {task.title}
-                      </span>
-                      <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>
-                        Done {formatTimestampDisplay(task.completedAt || undefined)}
-                      </span>
-                    </div>
+                        {/* Timeline Node Column */}
+                        <div style={{ width: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', alignSelf: 'stretch', position: 'relative', flexShrink: 0 }}>
+                          {/* Timeline vertical line segment */}
+                          <div style={{
+                            position: 'absolute',
+                            top: index === 0 ? '50%' : 0,
+                            bottom: index === sortedCompletedTasks.length - 1 ? '50%' : 0,
+                            width: '2px',
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            zIndex: 1
+                          }} />
+                          {/* Checkmark circle node */}
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            border: '2px solid rgba(16, 185, 129, 0.8)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 2,
+                            color: 'rgb(16, 185, 129)',
+                            marginTop: 'auto',
+                            marginBottom: 'auto'
+                          }}>
+                            <Check size={11} strokeWidth={3.5} />
+                          </div>
+                        </div>
 
-                    {/* Category icon */}
-                    {task.category && task.category !== 'general' && (
-                      <div
-                        className={`cat-badge cat-${task.category}`}
-                        style={{
-                          height: '18px',
-                          width: '18px',
-                          borderRadius: '4px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}
-                      >
-                        {getCategoryIcon(task.category)}
+                        {/* Task Item Card */}
+                        <div
+                          onClick={() => setDetailedTask(task)}
+                          style={{
+                            flex: 1,
+                            background: 'rgba(255, 255, 255, 0.015)',
+                            border: '1px solid rgba(255, 255, 255, 0.03)',
+                            borderRadius: '10px',
+                            padding: '12px 14px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                          }}
+                          className="task-row-history-card"
+                        >
+                          {/* Category Box */}
+                          <div style={{
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '8px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            ...catStyles
+                          }}>
+                            {getHistoryCategoryIcon(task.category)}
+                          </div>
+
+                          {/* Title & Metadata */}
+                          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {task.title}
+                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-dim)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Calendar size={11} />
+                                <span>{formatDateDisplay(task.completedAt || undefined)}</span>
+                              </div>
+                              <span>•</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Clock size={11} />
+                                <span>{task.completedAt ? new Date(task.completedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Arrow Chevron Button */}
+                          <div style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '6px',
+                            border: '1px solid rgba(255, 255, 255, 0.05)',
+                            background: 'rgba(255, 255, 255, 0.01)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#10b981',
+                            flexShrink: 0
+                          }}>
+                            <ChevronRight size={14} />
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                ))
+                    );
+                  })}
+                </div>
               )}
             </div>
+
           </div>
         )}
       </div>
+
+      {/* Hover effects */}
+      <style>{`
+        .task-row-history-card:hover {
+          background: rgba(255, 255, 255, 0.03) !important;
+          border-color: rgba(255, 255, 255, 0.08) !important;
+          transform: translateY(-1px);
+        }
+      `}</style>
     </div>
   );
 };
