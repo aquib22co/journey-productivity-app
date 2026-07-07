@@ -226,7 +226,7 @@ const App: React.FC = () => {
                     height: '48px',
                     borderRadius: '10px',
                     border: '1px solid rgba(255, 255, 255, 0.05)',
-                    background: 'rgba(18, 24, 38, 0.5)',
+                    background: 'var(--bg-card)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -250,7 +250,7 @@ const App: React.FC = () => {
                   height: '48px',
                   borderRadius: '10px',
                   border: '1px solid rgba(255, 255, 255, 0.05)',
-                  background: 'rgba(18, 24, 38, 0.5)',
+                  background: 'var(--bg-card)',
                   padding: '0 20px',
                 }}
               >

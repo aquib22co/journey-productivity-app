@@ -15,10 +15,10 @@
 :root {
   --bg-widget: rgba(9, 13, 22, var(--widget-opacity, 0.95));
   /* Deep slate-blue, slightly transparent */
-  --bg-card: rgba(18, 24, 38, 0.5);
+  --bg-card: rgba(18, 24, 38, 0.98);
   /* Sleek card background */
-  --bg-card-hover: rgba(26, 34, 54, 0.65);
-  --bg-input: rgba(7, 10, 17, 0.75);
+  --bg-card-hover: rgba(26, 34, 54, 0.98);
+  --bg-input: rgba(7, 10, 17, 0.95);
 
   --border-card: rgba(255, 255, 255, 0.05);
   --border-light: rgba(255, 255, 255, 0.08);
@@ -444,7 +444,7 @@ textarea {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: rgba(255, 255, 255, 0.01);
+  background: var(--bg-card);
   border: 1px solid rgba(255, 255, 255, 0.03);
   border-radius: 8px;
   padding: 14px;
