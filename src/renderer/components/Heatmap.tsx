@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Task, Settings } from '../../shared/types';
-import { FileText } from 'lucide-react';
 
 interface HeatmapProps {
   tasks: Task[];
@@ -153,8 +152,21 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
 
   return (
     <div className="widget-card" style={{ position: 'relative', flex: '1', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px 22px' }}>
-      <div className="widget-card-header" style={{ marginBottom: '10px' }}>
+      <div className="widget-card-header" style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span className="widget-card-title" style={{ fontSize: '16.5px', fontWeight: '700' }}>Your Journey</span>
+        
+        {/* Less/More Legend in Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)', userSelect: 'none' }}>
+          <span>Less</span>
+          <div style={{ display: 'flex', gap: '3px' }}>
+            <div style={{ width: '11px', height: '11px', borderRadius: '2px', backgroundColor: 'var(--hm-level-0)' }} />
+            <div style={{ width: '11px', height: '11px', borderRadius: '2px', backgroundColor: 'var(--hm-level-1)' }} />
+            <div style={{ width: '11px', height: '11px', borderRadius: '2px', backgroundColor: 'var(--hm-level-2)' }} />
+            <div style={{ width: '11px', height: '11px', borderRadius: '2px', backgroundColor: 'var(--hm-level-3)' }} />
+            <div style={{ width: '11px', height: '11px', borderRadius: '2px', backgroundColor: 'var(--hm-level-4)' }} />
+          </div>
+          <span>More</span>
+        </div>
       </div>
 
       <div
@@ -216,59 +228,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
         </div>
       </div>
 
-      {/* Legend and Info Link */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          fontSize: '12.5px',
-          color: 'var(--text-muted)',
-          marginTop: '16px',
-          padding: '0 2px',
-        }}
-        className="no-drag"
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '28px',
-            height: '28px',
-            borderRadius: '8px',
-            background: 'rgba(0, 132, 255, 0.1)',
-            color: '#0084ff',
-            flexShrink: '0'
-          }}>
-            <FileText size={14} />
-          </div>
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              alert(
-                "Contributions are counted by tracking completed tasks each day! Each daily cell's brightness increases as you complete more tasks."
-              );
-            }}
-            style={{ color: '#0084ff', textDecoration: 'none', fontWeight: 600 }}
-          >
-            Learn how we count contributions
-          </a>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '12px' }}>Less</span>
-          <div style={{ display: 'flex', gap: '4px' }}>
-            <div style={{ width: '15px', height: '15px', borderRadius: '3px', backgroundColor: 'var(--hm-level-0)' }} />
-            <div style={{ width: '15px', height: '15px', borderRadius: '3px', backgroundColor: 'var(--hm-level-1)' }} />
-            <div style={{ width: '15px', height: '15px', borderRadius: '3px', backgroundColor: 'var(--hm-level-2)' }} />
-            <div style={{ width: '15px', height: '15px', borderRadius: '3px', backgroundColor: 'var(--hm-level-3)' }} />
-            <div style={{ width: '15px', height: '15px', borderRadius: '3px', backgroundColor: 'var(--hm-level-4)' }} />
-          </div>
-          <span style={{ fontSize: '12px' }}>More</span>
-        </div>
-      </div>
 
       {/* Tooltip Card (Rendered outside the scroll container to prevent boundary clipping) */}
       {hoveredCell && (
