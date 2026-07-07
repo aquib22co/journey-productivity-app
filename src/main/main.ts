@@ -353,8 +353,14 @@ ipcMain.handle('hide-window', () => {
 });
 
 ipcMain.handle('close-window', () => {
-  if (badgeWin) badgeWin.close();
-  if (win) win.close();
+  console.log('[Main] IPC close-window handler invoked, quitting app...');
+  if (badgeWin) {
+    try { badgeWin.close(); } catch {}
+  }
+  if (win) {
+    try { win.close(); } catch {}
+  }
+  app.quit();
 });
 
 ipcMain.handle('restore-main-window', () => {
