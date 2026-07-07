@@ -15,7 +15,8 @@ import {
   Puzzle,
   ArrowLeftRight,
   FileText,
-  HelpCircle
+  HelpCircle,
+  Filter
 } from 'lucide-react';
 
 interface CompletedTasksPanelProps {
@@ -173,7 +174,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
             }}
             title="Filter by Date Range"
           >
-            <Calendar size={13} />
+            <Filter size={13} />
           </button>
         )}
       </div>
