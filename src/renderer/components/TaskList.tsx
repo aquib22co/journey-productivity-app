@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { Task } from '../../shared/types';
 import { TaskDetailPanel } from './TaskDetailPanel';
 import { AddTaskPanel } from './AddTaskPanel';
+import { Button } from '@/components/ui/button';
 import {
   Trash2,
   Calendar,
@@ -126,27 +127,15 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
           <span className="widget-card-title">Day Wise Task Manager</span>
         </div>
         {!detailedTask && !isAddingTask && (
-          <button
-            type="button"
+          <Button
+            variant="default"
+            size="sm"
             onClick={() => setIsAddingTask(true)}
-            className="win-btn"
-            style={{
-              width: '28px',
-              height: '28px',
-              borderRadius: '6px',
-              background: 'rgba(0, 132, 255, 0.08)',
-              color: '#0084ff',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: 'none',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
             title="Add Task"
           >
-            <Plus size={16} />
-          </button>
+            <Plus size={14} />
+            Task
+          </Button>
         )}
       </div>
 

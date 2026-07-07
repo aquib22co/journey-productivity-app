@@ -369,6 +369,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
                           onClick={() => setDetailedTask(task)}
                           style={{
                             flex: 1,
+                            minWidth: 0,
                             background: 'rgba(255, 255, 255, 0.015)',
                             border: '1px solid rgba(255, 255, 255, 0.03)',
                             borderRadius: '10px',
@@ -397,7 +398,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
 
                           {/* Title & Metadata */}
                           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span style={{ display: 'block', fontSize: '13.5px', fontWeight: '600', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {task.title}
                             </span>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-dim)' }}>
