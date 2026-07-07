@@ -3,6 +3,7 @@ import type { Task, Settings } from '../shared/types';
 import { TaskList } from './components/TaskList';
 import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
+import { CompletedTasksPanel } from './components/CompletedTasksPanel';
 import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -442,9 +443,12 @@ const App: React.FC = () => {
           ) : (
             /* Side-by-Side Horizontal Grid Layout */
             <div className="dashboard-grid">
-              {/* Left Column: Heatmap */}
-              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
+              {/* Left Column: Heatmap & CompletedTasksPanel */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minHeight: 0, minWidth: 0 }}>
                 <Heatmap tasks={tasks} settings={settings} />
+                <CompletedTasksPanel
+                  tasks={tasks}
+                />
               </div>
 
               {/* Right Column: Task List Card */}
