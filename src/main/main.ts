@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -60,12 +60,44 @@ function writeData(data: any) {
   }
 }
 
+function toggleMainWindow() {
+  if (!win) return;
+
+  const isVisible = win.isVisible();
+  const isFocused = win.isFocused();
+
+  // If badge window is visible, or main window is hidden/minimized
+  if (!isVisible || (badgeWin && badgeWin.isVisible())) {
+    if (badgeWin) {
+      badgeWin.hide();
+    }
+    win.show();
+    win.focus();
+    win.setAlwaysOnTop(true);
+  } else {
+    if (isFocused) {
+      // Hide main window and show badge
+      win.hide();
+      if (!badgeWin) {
+        createBadgeWindow();
+      } else {
+        badgeWin.show();
+      }
+    } else {
+      // Main window is visible but not focused, bring it to front
+      win.show();
+      win.focus();
+      win.setAlwaysOnTop(true);
+    }
+  }
+}
+
 function createTray() {
   const icon = nativeImage.createFromDataURL(defaultIconBase64);
   tray = new Tray(icon);
 
   const contextMenu = Menu.buildFromTemplate([
-    { label: 'Show Widget', click: () => { if (win) { win.show(); win.focus(); } } },
+    { label: 'Show Widget', click: () => { if (win) { win.show(); win.focus(); win.setAlwaysOnTop(true); } } },
     { label: 'Hide Widget', click: () => { if (win) { win.hide(); } } },
     { type: 'separator' },
     { label: 'Quit', click: () => { app.quit(); } }
@@ -75,14 +107,7 @@ function createTray() {
   tray.setContextMenu(contextMenu);
 
   tray.on('click', () => {
-    if (win) {
-      if (win.isVisible()) {
-        win.hide();
-      } else {
-        win.show();
-        win.focus();
-      }
-    }
+    toggleMainWindow();
   });
 }
 
@@ -187,6 +212,12 @@ function createWindow() {
   win.on('move', saveWindowBoundsDebounced);
   win.on('resize', saveWindowBoundsDebounced);
 
+  win.on('blur', () => {
+    if (win) {
+      win.setAlwaysOnTop(false);
+    }
+  });
+
   win.on('closed', () => {
     if (saveBoundsTimeout) {
       clearTimeout(saveBoundsTimeout);
@@ -266,6 +297,11 @@ if (!isPrimaryInstance) {
     createWindow();
     createTray();
 
+    // Register global shortcut to toggle widget window focus
+    globalShortcut.register('CommandOrControl+Alt+J', () => {
+      toggleMainWindow();
+    });
+
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {
         createWindow();
@@ -278,6 +314,10 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+app.on('will-quit', () => {
+  globalShortcut.unregisterAll();
 });
 
 // IPC IPC Handlers
@@ -370,6 +410,7 @@ ipcMain.handle('restore-main-window', () => {
   if (win) {
     win.show();
     win.focus();
+    win.setAlwaysOnTop(true);
   }
 });
 
