@@ -3,7 +3,7 @@ import type { Task, Settings } from '../shared/types';
 import { TaskList } from './components/TaskList';
 import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
-import { CompletedTasksPanel } from './components/CompletedTasksPanel';
+import { CompletedTasksPanel, getLocalDateString, getSevenDaysAgoString } from './components/CompletedTasksPanel';
 import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -116,6 +116,11 @@ const App: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  // History panel filter state
+  const [historyStartDate, setHistoryStartDate] = useState<string>(getSevenDaysAgoString);
+  const [historyEndDate, setHistoryEndDate] = useState<string>(() => getLocalDateString(new Date()));
+  const [showHistoryFilter, setShowHistoryFilter] = useState(false);
+
   // Load tasks and settings on mount
   useEffect(() => {
     const loadInitialData = async () => {
@@ -203,6 +208,20 @@ const App: React.FC = () => {
 
   const handleClearTasks = () => {
     handleSaveTasks([]);
+  };
+
+  const handleHeatmapCellClick = (dateStr: string) => {
+    // If the clicked date is already selected, reset back to last 7 days!
+    const todayStr = getLocalDateString(new Date());
+    const sevenDaysAgoStr = getSevenDaysAgoString();
+    
+    if (historyStartDate === dateStr && historyEndDate === dateStr) {
+      setHistoryStartDate(sevenDaysAgoStr);
+      setHistoryEndDate(todayStr);
+    } else {
+      setHistoryStartDate(dateStr);
+      setHistoryEndDate(dateStr);
+    }
   };
 
 
@@ -445,10 +464,16 @@ const App: React.FC = () => {
             <div className="dashboard-grid">
               {/* Left Column: Heatmap & CompletedTasksPanel */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minHeight: 0, minWidth: 0 }}>
-                <Heatmap tasks={tasks} settings={settings} />
+                <Heatmap tasks={tasks} settings={settings} onCellClick={handleHeatmapCellClick} />
                 <CompletedTasksPanel
                   tasks={tasks}
                   onUpdateTask={handleUpdateTask}
+                  startDate={historyStartDate}
+                  endDate={historyEndDate}
+                  onStartDateChange={setHistoryStartDate}
+                  onEndDateChange={setHistoryEndDate}
+                  showFilter={showHistoryFilter}
+                  onShowFilterChange={setShowHistoryFilter}
                 />
               </div>
 

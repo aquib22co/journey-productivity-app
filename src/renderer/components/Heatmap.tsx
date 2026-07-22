@@ -4,9 +4,10 @@ import type { Task, Settings } from '../../shared/types';
 interface HeatmapProps {
   tasks: Task[];
   settings: Settings;
+  onCellClick?: (dateStr: string) => void;
 }
 
-export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
+export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings, onCellClick }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCell, setHoveredCell] = useState<{
     dateStr: string;
@@ -220,6 +221,10 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings }) => {
                       handleCellMouseEnter(e, date, count, idx);
                     }}
                     onMouseLeave={() => setHoveredCell(null)}
+                    onClick={() => {
+                      if (isFuture) return;
+                      onCellClick?.(key);
+                    }}
                   />
                 );
               })}

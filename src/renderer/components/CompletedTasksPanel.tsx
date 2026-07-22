@@ -22,16 +22,22 @@ import {
 interface CompletedTasksPanelProps {
   tasks: Task[];
   onUpdateTask: (task: Task) => void;
+  startDate: string;
+  endDate: string;
+  onStartDateChange: (date: string) => void;
+  onEndDateChange: (date: string) => void;
+  showFilter: boolean;
+  onShowFilterChange: (show: boolean) => void;
 }
 
-const getLocalDateString = (date: Date) => {
+export const getLocalDateString = (date: Date) => {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 };
 
-const getSevenDaysAgoString = () => {
+export const getSevenDaysAgoString = () => {
   const d = new Date();
   d.setDate(d.getDate() - 7);
   return getLocalDateString(d);
@@ -83,12 +89,15 @@ const getCategoryStyles = (category?: 'work' | 'social' | 'study' | 'general') =
 
 export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
   tasks,
-  onUpdateTask
+  onUpdateTask,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+  showFilter,
+  onShowFilterChange
 }) => {
-  const [startDate, setStartDate] = useState(getSevenDaysAgoString);
-  const [endDate, setEndDate] = useState(() => getLocalDateString(new Date()));
   const [detailedTask, setDetailedTask] = useState<Task | null>(null);
-  const [showFilter, setShowFilter] = useState(false);
 
   // Helper to format date display (e.g. "Jul 7, 2026")
   const formatDateDisplay = (dateStr?: string) => {
@@ -157,7 +166,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
         {!detailedTask && (
           <button
             type="button"
-            onClick={() => setShowFilter(!showFilter)}
+            onClick={() => onShowFilterChange(!showFilter)}
             className={`win-btn ${showFilter ? 'active' : ''}`}
             style={{
               width: '28px',
@@ -304,7 +313,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
                   <span style={{ fontSize: '9px', color: 'var(--text-dim)', fontWeight: 600 }}>Start Date</span>
                   <DatePicker
                     value={startDate}
-                    onChange={(val) => setStartDate(val || getSevenDaysAgoString())}
+                    onChange={(val) => onStartDateChange(val || getSevenDaysAgoString())}
                     placeholder="From..."
                   />
                 </div>
@@ -313,7 +322,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
                   <span style={{ fontSize: '9px', color: 'var(--text-dim)', fontWeight: 600 }}>End Date</span>
                   <DatePicker
                     value={endDate}
-                    onChange={(val) => setEndDate(val || getLocalDateString(new Date()))}
+                    onChange={(val) => onEndDateChange(val || getLocalDateString(new Date()))}
                     placeholder="To..."
                   />
                 </div>
