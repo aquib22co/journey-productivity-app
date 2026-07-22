@@ -281,19 +281,20 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
                     {task.category && task.category !== 'general' && (
                       <div
                         className={`cat-badge cat-${task.category}`}
-                        title={task.category.charAt(0).toUpperCase() + task.category.slice(1)}
                         style={{
                           height: '18px',
-                          width: '18px',
-                          padding: '0',
+                          width: 'auto',
+                          padding: '2px 8px',
                           borderRadius: '4px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          cursor: 'help'
+                          fontSize: '10px',
+                          fontWeight: '600',
+                          textTransform: 'capitalize'
                         }}
                       >
-                        {getCategoryIcon(task.category)}
+                        {task.category}
                       </div>
                     )}
                   </div>
