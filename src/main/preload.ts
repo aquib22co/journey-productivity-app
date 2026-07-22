@@ -12,4 +12,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.invoke('close-window'),
   dragWindow: (dx: number, dy: number) => ipcRenderer.send('drag-window', { dx, dy }),
   restoreMainWindow: () => ipcRenderer.invoke('restore-main-window'),
+  onHighlightTask: (callback: (taskId: string) => void) => {
+    const subscription = (_event: any, taskId: string) => callback(taskId);
+    ipcRenderer.on('highlight-task', subscription);
+    return () => {
+      ipcRenderer.removeListener('highlight-task', subscription);
+    };
+  }
 });

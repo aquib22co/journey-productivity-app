@@ -1,236 +1,405 @@
-import { BrowserWindow as e, Menu as t, Tray as n, app as r, globalShortcut as i, ipcMain as a, nativeImage as o, screen as s } from "electron";
-import * as c from "path";
-import * as l from "fs";
-import { fileURLToPath as u } from "url";
+import { BrowserWindow, Menu, Notification, Tray, app, globalShortcut, ipcMain, nativeImage, screen } from "electron";
+import * as path from "path";
+import * as fs from "fs";
+import { fileURLToPath } from "url";
 //#region src/main/main.ts
-var d = u(import.meta.url), f = c.dirname(d), p = null, m = null, h = null, g = c.join(r.getPath("userData"), "journey-widget-data.json"), _ = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC";
-function v() {
+var __filename = fileURLToPath(import.meta.url);
+var __dirname = path.dirname(__filename);
+var win = null;
+var badgeWin = null;
+var tray = null;
+var dataFilePath = path.join(app.getPath("userData"), "journey-widget-data.json");
+var defaultIconBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC";
+function readData() {
 	try {
-		if (l.existsSync(g)) {
-			let e = l.readFileSync(g, "utf-8"), t = JSON.parse(e);
+		if (fs.existsSync(dataFilePath)) {
+			const content = fs.readFileSync(dataFilePath, "utf-8");
+			const parsed = JSON.parse(content);
 			return {
-				tasks: Array.isArray(t.tasks) ? t.tasks : [],
+				tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
 				settings: {
-					alwaysOnTop: !0,
+					alwaysOnTop: true,
 					opacity: .95,
-					openAtLogin: !1,
+					openAtLogin: false,
 					theme: "dark",
 					heatmapThresholds: {
 						low: 1,
 						medium: 3,
 						high: 5
 					},
-					...t.settings || {}
+					enableNotifications: true,
+					...parsed.settings || {}
 				},
-				windowBounds: t.windowBounds || null
+				windowBounds: parsed.windowBounds || null
 			};
 		}
-	} catch (e) {
-		console.error("Error reading data:", e);
+	} catch (error) {
+		console.error("Error reading data:", error);
 	}
 	return {
 		tasks: [],
 		settings: {
-			alwaysOnTop: !0,
+			alwaysOnTop: true,
 			opacity: .95,
-			openAtLogin: !1,
+			openAtLogin: false,
 			theme: "dark",
 			heatmapThresholds: {
 				low: 1,
 				medium: 3,
 				high: 5
-			}
+			},
+			enableNotifications: true
 		},
 		windowBounds: null
 	};
 }
-function y(e) {
+function writeData(data) {
 	try {
-		return l.writeFileSync(g, JSON.stringify(e, null, 2), "utf-8"), !0;
-	} catch (e) {
-		return console.error("Error writing data:", e), !1;
+		fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
+		return true;
+	} catch (error) {
+		console.error("Error writing data:", error);
+		return false;
 	}
 }
-function b() {
-	if (!p) return;
-	let e = p.isVisible(), t = p.isFocused();
-	!e || m && m.isVisible() ? (m && m.hide(), p.show(), p.focus(), p.setAlwaysOnTop(!0)) : t ? (p.hide(), m ? m.show() : C()) : (p.show(), p.focus(), p.setAlwaysOnTop(!0));
+function toggleMainWindow() {
+	if (!win) return;
+	const isVisible = win.isVisible();
+	const isFocused = win.isFocused();
+	if (!isVisible || badgeWin && badgeWin.isVisible()) {
+		if (badgeWin) badgeWin.hide();
+		win.show();
+		win.focus();
+		win.setAlwaysOnTop(true);
+	} else if (isFocused) {
+		win.hide();
+		if (!badgeWin) createBadgeWindow();
+		else badgeWin.show();
+	} else {
+		win.show();
+		win.focus();
+		win.setAlwaysOnTop(true);
+	}
 }
-function x() {
-	h = new n(o.createFromDataURL(_));
-	let e = t.buildFromTemplate([
+function createTray() {
+	tray = new Tray(nativeImage.createFromDataURL(defaultIconBase64));
+	const contextMenu = Menu.buildFromTemplate([
 		{
 			label: "Show Widget",
 			click: () => {
-				p && (p.show(), p.focus(), p.setAlwaysOnTop(!0));
+				if (win) {
+					win.show();
+					win.focus();
+					win.setAlwaysOnTop(true);
+				}
 			}
 		},
 		{
 			label: "Hide Widget",
 			click: () => {
-				p && p.hide();
+				if (win) win.hide();
 			}
 		},
 		{ type: "separator" },
 		{
 			label: "Quit",
 			click: () => {
-				r.quit();
+				app.quit();
 			}
 		}
 	]);
-	h.setToolTip("Journey - Activity Widget"), h.setContextMenu(e), h.on("click", () => {
-		b();
+	tray.setToolTip("Journey - Activity Widget");
+	tray.setContextMenu(contextMenu);
+	tray.on("click", () => {
+		toggleMainWindow();
 	});
 }
-function S() {
-	let t = v().windowBounds, { width: n, height: r, x: i, y: a } = s.getPrimaryDisplay().workArea, o = 960, l = 620;
-	t && typeof t.width == "number" && typeof t.height == "number" && (o = Math.max(800, Math.min(1200, t.width)), l = Math.max(800, Math.min(800, t.height)));
-	let u = i + n - o - 24, d = a + r - l - 24;
-	if (t && typeof t.x == "number" && typeof t.y == "number") {
-		let e = t.x + o / 2, n = t.y + l / 2, r = !1, i = s.getAllDisplays();
-		for (let t of i) {
-			let i = t.bounds;
-			if (e >= i.x && e <= i.x + i.width && n >= i.y && n <= i.y + i.height) {
-				r = !0;
+function createWindow() {
+	const savedBounds = readData().windowBounds;
+	const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
+	let windowWidth = 960;
+	let windowHeight = 620;
+	if (savedBounds && typeof savedBounds.width === "number" && typeof savedBounds.height === "number") {
+		windowWidth = Math.max(800, Math.min(1200, savedBounds.width));
+		windowHeight = Math.max(800, Math.min(800, savedBounds.height));
+	}
+	let windowX = x + width - windowWidth - 24;
+	let windowY = y + height - windowHeight - 24;
+	if (savedBounds && typeof savedBounds.x === "number" && typeof savedBounds.y === "number") {
+		const savedCenterX = savedBounds.x + windowWidth / 2;
+		const savedCenterY = savedBounds.y + windowHeight / 2;
+		let isVisible = false;
+		const displays = screen.getAllDisplays();
+		for (const display of displays) {
+			const bounds = display.bounds;
+			if (savedCenterX >= bounds.x && savedCenterX <= bounds.x + bounds.width && savedCenterY >= bounds.y && savedCenterY <= bounds.y + bounds.height) {
+				isVisible = true;
 				break;
 			}
 		}
-		r && (u = t.x, d = t.y);
+		if (isVisible) {
+			windowX = savedBounds.x;
+			windowY = savedBounds.y;
+		}
 	}
-	p = new e({
-		x: u,
-		y: d,
-		width: o,
-		height: l,
+	win = new BrowserWindow({
+		x: windowX,
+		y: windowY,
+		width: windowWidth,
+		height: windowHeight,
 		minWidth: 800,
 		minHeight: 600,
 		maxWidth: 1200,
 		maxHeight: 800,
-		frame: !1,
-		transparent: !0,
-		alwaysOnTop: !1,
-		skipTaskbar: !0,
+		frame: false,
+		transparent: true,
+		alwaysOnTop: false,
+		skipTaskbar: true,
 		backgroundMaterial: "none",
 		webPreferences: {
-			preload: c.join(f, "preload.mjs"),
-			nodeIntegration: !1,
-			contextIsolation: !0
+			preload: path.join(__dirname, "preload.mjs"),
+			nodeIntegration: false,
+			contextIsolation: true
 		}
-	}), process.env.VITE_DEV_SERVER_URL ? p.loadURL(process.env.VITE_DEV_SERVER_URL) : p.loadFile(c.join(f, "../dist/index.html"));
-	let m = null, h = () => {
-		m && clearTimeout(m), m = setTimeout(() => {
-			if (p) try {
-				let e = p.getBounds(), t = v();
-				t.windowBounds = {
-					x: e.x,
-					y: e.y,
-					width: e.width,
-					height: e.height
-				}, y(t);
-			} catch (e) {
-				console.error("Failed to save window bounds:", e);
+	});
+	if (process.env.VITE_DEV_SERVER_URL) win.loadURL(process.env.VITE_DEV_SERVER_URL);
+	else win.loadFile(path.join(__dirname, "../dist/index.html"));
+	let saveBoundsTimeout = null;
+	const saveWindowBoundsDebounced = () => {
+		if (saveBoundsTimeout) clearTimeout(saveBoundsTimeout);
+		saveBoundsTimeout = setTimeout(() => {
+			if (!win) return;
+			try {
+				const bounds = win.getBounds();
+				const data = readData();
+				data.windowBounds = {
+					x: bounds.x,
+					y: bounds.y,
+					width: bounds.width,
+					height: bounds.height
+				};
+				writeData(data);
+			} catch (error) {
+				console.error("Failed to save window bounds:", error);
 			}
 		}, 500);
 	};
-	p.on("move", h), p.on("resize", h), p.on("blur", () => {
-		p && p.setAlwaysOnTop(!1);
-	}), p.on("closed", () => {
-		m && clearTimeout(m), p = null;
+	win.on("move", saveWindowBoundsDebounced);
+	win.on("resize", saveWindowBoundsDebounced);
+	win.on("blur", () => {
+		if (win) win.setAlwaysOnTop(false);
+	});
+	win.on("closed", () => {
+		if (saveBoundsTimeout) clearTimeout(saveBoundsTimeout);
+		win = null;
 	});
 }
-function C() {
-	if (console.log("[Main] createBadgeWindow called"), m) {
+function createBadgeWindow() {
+	console.log("[Main] createBadgeWindow called");
+	if (badgeWin) {
 		console.log("[Main] badgeWin already exists");
 		return;
 	}
 	try {
-		let { width: t, height: n } = s.getPrimaryDisplay().workArea, r = t - 70 - 24, i = n - 70 - 24;
-		if (console.log(`[Main] Badge coordinates calculated: x=${r}, y=${i}, size=70`), m = new e({
-			x: r,
-			y: i,
-			width: 70,
-			height: 70,
-			frame: !1,
-			transparent: !0,
-			alwaysOnTop: !1,
-			skipTaskbar: !0,
-			resizable: !1,
+		const { width, height } = screen.getPrimaryDisplay().workArea;
+		const badgeSize = 70;
+		const badgeX = width - badgeSize - 24;
+		const badgeY = height - badgeSize - 24;
+		console.log(`[Main] Badge coordinates calculated: x=${badgeX}, y=${badgeY}, size=${badgeSize}`);
+		badgeWin = new BrowserWindow({
+			x: badgeX,
+			y: badgeY,
+			width: badgeSize,
+			height: badgeSize,
+			frame: false,
+			transparent: true,
+			alwaysOnTop: false,
+			skipTaskbar: true,
+			resizable: false,
 			backgroundMaterial: "none",
 			webPreferences: {
-				preload: c.join(f, "preload.mjs"),
-				nodeIntegration: !1,
-				contextIsolation: !0
+				preload: path.join(__dirname, "preload.mjs"),
+				nodeIntegration: false,
+				contextIsolation: true
 			}
-		}), process.env.VITE_DEV_SERVER_URL) {
-			let e = `${process.env.VITE_DEV_SERVER_URL}?mode=badge`;
-			console.log(`[Main] Loading dev server URL: ${e}`), m.loadURL(e);
-		} else {
-			let e = c.join(f, "../dist/index.html");
-			console.log(`[Main] Loading production index file: ${e}`), m.loadFile(e, { query: { mode: "badge" } });
-		}
-		m.on("closed", () => {
-			console.log("[Main] badgeWin closed"), m = null;
 		});
-	} catch (e) {
-		console.error("[Main] Exception caught in createBadgeWindow:", e);
+		if (process.env.VITE_DEV_SERVER_URL) {
+			const devUrl = `${process.env.VITE_DEV_SERVER_URL}?mode=badge`;
+			console.log(`[Main] Loading dev server URL: ${devUrl}`);
+			badgeWin.loadURL(devUrl);
+		} else {
+			const buildPath = path.join(__dirname, "../dist/index.html");
+			console.log(`[Main] Loading production index file: ${buildPath}`);
+			badgeWin.loadFile(buildPath, { query: { mode: "badge" } });
+		}
+		badgeWin.on("closed", () => {
+			console.log("[Main] badgeWin closed");
+			badgeWin = null;
+		});
+	} catch (error) {
+		console.error("[Main] Exception caught in createBadgeWindow:", error);
 	}
 }
-r.requestSingleInstanceLock({ myKey: "journey-tracker" }) ? (r.on("second-instance", () => {
-	p && (p.isMinimized() && p.restore(), p.isVisible() || p.show(), p.focus());
-}), r.whenReady().then(() => {
-	S(), x(), i.register("CommandOrControl+Alt+J", () => {
-		b();
-	}), r.on("activate", () => {
-		e.getAllWindows().length === 0 && S();
+if (!app.requestSingleInstanceLock({ myKey: "journey-tracker" })) app.quit();
+else {
+	app.on("second-instance", () => {
+		if (win) {
+			if (win.isMinimized()) win.restore();
+			if (!win.isVisible()) win.show();
+			win.focus();
+		}
 	});
-})) : r.quit(), r.on("window-all-closed", () => {
-	process.platform !== "darwin" && r.quit();
-}), r.on("will-quit", () => {
-	i.unregisterAll();
-}), a.handle("get-tasks", () => v().tasks), a.handle("save-tasks", (e, t) => {
-	let n = v();
-	return n.tasks = t, y(n);
-}), a.handle("get-settings", () => v().settings), a.handle("save-settings", (e, t) => {
-	let n = v();
-	n.settings = t;
-	let i = y(n);
-	i && p && p.setAlwaysOnTop(!1);
-	try {
-		r.setLoginItemSettings({
-			openAtLogin: t.openAtLogin,
-			path: r.getPath("exe")
-		});
-	} catch (e) {
-		console.error("Failed to set login items settings:", e);
+	const notifiedKeys = /* @__PURE__ */ new Set();
+	function getTaskDueTime(task) {
+		if (!task.dueDate) return null;
+		const [year, month, day] = task.dueDate.split("-").map(Number);
+		let hours = 0;
+		let minutes = 0;
+		if (task.time) {
+			const timeMatch = task.time.match(/^(\d{2}):(\d{2})\s*(AM|PM)$/i);
+			if (timeMatch) {
+				hours = parseInt(timeMatch[1], 10);
+				minutes = parseInt(timeMatch[2], 10);
+				const ampm = timeMatch[3].toUpperCase();
+				if (ampm === "PM" && hours < 12) hours += 12;
+				else if (ampm === "AM" && hours === 12) hours = 0;
+			}
+		}
+		return new Date(year, month - 1, day, hours, minutes, 0, 0);
 	}
-	return i;
-}), a.handle("set-always-on-top", (e, t) => {
-	p && p.setAlwaysOnTop(!1);
-}), a.handle("set-opacity", (e, t) => {}), a.handle("minimize-window", () => {
-	if (console.log("[Main] IPC minimize-window handler invoked"), p) try {
-		console.log("[Main] Hiding main window..."), p.hide(), m ? (console.log("[Main] badgeWin is already spawned. Showing badge..."), m.show()) : (console.log("[Main] badgeWin is null. Spawning badge..."), C());
-	} catch (e) {
-		console.error("[Main] Error handling minimize-window IPC:", e);
+	function checkDueTasks() {
+		const { tasks, settings } = readData();
+		if (!settings.enableNotifications) return;
+		const now = /* @__PURE__ */ new Date();
+		tasks.forEach((task) => {
+			if (task.completedAt) return;
+			const dueTime = getTaskDueTime(task);
+			if (!dueTime) return;
+			if (dueTime <= now) {
+				const key = `${task.id}:${task.dueDate || ""}:${task.time || ""}`;
+				if (!notifiedKeys.has(key)) {
+					notifiedKeys.add(key);
+					if (Notification.isSupported()) {
+						const notification = new Notification({
+							title: task.title,
+							body: task.description || "This task is now due."
+						});
+						notification.on("click", () => {
+							toggleMainWindow();
+							if (win && win.webContents) win.webContents.send("highlight-task", task.id);
+						});
+						notification.show();
+					}
+				}
+			}
+		});
+	}
+	function startDueTaskScheduler() {
+		const { tasks } = readData();
+		const now = /* @__PURE__ */ new Date();
+		tasks.forEach((task) => {
+			if (!task.completedAt) {
+				const dueTime = getTaskDueTime(task);
+				if (dueTime && dueTime <= now) {
+					const key = `${task.id}:${task.dueDate || ""}:${task.time || ""}`;
+					notifiedKeys.add(key);
+				}
+			}
+		});
+		checkDueTasks();
+		setInterval(checkDueTasks, 6e4);
+	}
+	app.whenReady().then(() => {
+		createWindow();
+		createTray();
+		startDueTaskScheduler();
+		globalShortcut.register("CommandOrControl+Alt+J", () => {
+			toggleMainWindow();
+		});
+		app.on("activate", () => {
+			if (BrowserWindow.getAllWindows().length === 0) createWindow();
+		});
+	});
+}
+app.on("window-all-closed", () => {
+	if (process.platform !== "darwin") app.quit();
+});
+app.on("will-quit", () => {
+	globalShortcut.unregisterAll();
+});
+ipcMain.handle("get-tasks", () => {
+	return readData().tasks;
+});
+ipcMain.handle("save-tasks", (_event, tasks) => {
+	const data = readData();
+	data.tasks = tasks;
+	return writeData(data);
+});
+ipcMain.handle("get-settings", () => {
+	return readData().settings;
+});
+ipcMain.handle("save-settings", (_event, settings) => {
+	const data = readData();
+	data.settings = settings;
+	const success = writeData(data);
+	if (success && win) win.setAlwaysOnTop(false);
+	try {
+		app.setLoginItemSettings({
+			openAtLogin: settings.openAtLogin,
+			path: app.getPath("exe")
+		});
+	} catch (error) {
+		console.error("Failed to set login items settings:", error);
+	}
+	return success;
+});
+ipcMain.handle("set-always-on-top", (_event, _alwaysOnTop) => {
+	if (win) win.setAlwaysOnTop(false);
+});
+ipcMain.handle("set-opacity", (_event, _opacity) => {});
+ipcMain.handle("minimize-window", () => {
+	console.log("[Main] IPC minimize-window handler invoked");
+	if (win) try {
+		console.log("[Main] Hiding main window...");
+		win.hide();
+		if (!badgeWin) {
+			console.log("[Main] badgeWin is null. Spawning badge...");
+			createBadgeWindow();
+		} else {
+			console.log("[Main] badgeWin is already spawned. Showing badge...");
+			badgeWin.show();
+		}
+	} catch (error) {
+		console.error("[Main] Error handling minimize-window IPC:", error);
 	}
 	else console.warn("[Main] Cannot minimize: win is null!");
-}), a.handle("hide-window", () => {
-	p && p.hide();
-}), a.handle("close-window", () => {
-	if (console.log("[Main] IPC close-window handler invoked, quitting app..."), m) try {
-		m.close();
+});
+ipcMain.handle("hide-window", () => {
+	if (win) win.hide();
+});
+ipcMain.handle("close-window", () => {
+	console.log("[Main] IPC close-window handler invoked, quitting app...");
+	if (badgeWin) try {
+		badgeWin.close();
 	} catch {}
-	if (p) try {
-		p.close();
+	if (win) try {
+		win.close();
 	} catch {}
-	r.quit();
-}), a.handle("restore-main-window", () => {
-	m && m.hide(), p && (p.show(), p.focus(), p.setAlwaysOnTop(!0));
-}), a.on("drag-window", (t, { dx: n, dy: r }) => {
-	let i = e.fromWebContents(t.sender);
-	if (i) {
-		let [e, t] = i.getPosition();
-		i.setPosition(Math.round(e + n), Math.round(t + r));
+	app.quit();
+});
+ipcMain.handle("restore-main-window", () => {
+	if (badgeWin) badgeWin.hide();
+	if (win) {
+		win.show();
+		win.focus();
+		win.setAlwaysOnTop(true);
+	}
+});
+ipcMain.on("drag-window", (event, { dx, dy }) => {
+	const senderWin = BrowserWindow.fromWebContents(event.sender);
+	if (senderWin) {
+		const [x, y] = senderWin.getPosition();
+		senderWin.setPosition(Math.round(x + dx), Math.round(y + dy));
 	}
 });
 //#endregion

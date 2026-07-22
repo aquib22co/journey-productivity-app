@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut } from 'electron';
+import { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, screen, globalShortcut, Notification } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -29,6 +29,7 @@ function readData() {
           openAtLogin: false,
           theme: 'dark',
           heatmapThresholds: { low: 1, medium: 3, high: 5 },
+          enableNotifications: true,
           ...(parsed.settings || {})
         },
         windowBounds: parsed.windowBounds || null
@@ -44,7 +45,8 @@ function readData() {
       opacity: 0.95,
       openAtLogin: false,
       theme: 'dark',
-      heatmapThresholds: { low: 1, medium: 3, high: 5 }
+      heatmapThresholds: { low: 1, medium: 3, high: 5 },
+      enableNotifications: true
     },
     windowBounds: null
   };
@@ -292,10 +294,95 @@ if (!isPrimaryInstance) {
       win.focus();
     }
   });
+// Keep track of notified task IDs with a composite key: task.id + ':' + (task.dueDate || '') + ':' + (task.time || '')
+const notifiedKeys = new Set<string>();
 
+function getTaskDueTime(task: any): Date | null {
+  if (!task.dueDate) return null;
+  const [year, month, day] = task.dueDate.split('-').map(Number);
+  
+  let hours = 0;
+  let minutes = 0;
+  
+  if (task.time) {
+    const timeMatch = task.time.match(/^(\d{2}):(\d{2})\s*(AM|PM)$/i);
+    if (timeMatch) {
+      hours = parseInt(timeMatch[1], 10);
+      minutes = parseInt(timeMatch[2], 10);
+      const ampm = timeMatch[3].toUpperCase();
+      if (ampm === 'PM' && hours < 12) {
+        hours += 12;
+      } else if (ampm === 'AM' && hours === 12) {
+        hours = 0;
+      }
+    }
+  }
+  
+  return new Date(year, month - 1, day, hours, minutes, 0, 0);
+}
+
+function checkDueTasks() {
+  const { tasks, settings } = readData();
+  if (!settings.enableNotifications) return;
+
+  const now = new Date();
+  
+  tasks.forEach((task: any) => {
+    if (task.completedAt) return;
+    
+    const dueTime = getTaskDueTime(task);
+    if (!dueTime) return;
+    
+    // Check if the task is due or overdue
+    if (dueTime <= now) {
+      const key = `${task.id}:${task.dueDate || ''}:${task.time || ''}`;
+      if (!notifiedKeys.has(key)) {
+        notifiedKeys.add(key);
+        
+        // Trigger notification
+        if (Notification.isSupported()) {
+          const notification = new Notification({
+            title: task.title,
+            body: task.description || 'This task is now due.',
+          });
+          
+          notification.on('click', () => {
+            toggleMainWindow();
+            if (win && win.webContents) {
+              win.webContents.send('highlight-task', task.id);
+            }
+          });
+          
+          notification.show();
+        }
+      }
+    }
+  });
+}
+
+function startDueTaskScheduler() {
+  // Pre-populate notifiedKeys with currently overdue tasks to prevent spamming on startup
+  const { tasks } = readData();
+  const now = new Date();
+  
+  tasks.forEach((task: any) => {
+    if (!task.completedAt) {
+      const dueTime = getTaskDueTime(task);
+      if (dueTime && dueTime <= now) {
+        const key = `${task.id}:${task.dueDate || ''}:${task.time || ''}`;
+        notifiedKeys.add(key);
+      }
+    }
+  });
+
+  // Run check immediately, and then every 60 seconds
+  checkDueTasks();
+  setInterval(checkDueTasks, 60000);
+}
   app.whenReady().then(() => {
     createWindow();
     createTray();
+    startDueTaskScheduler();
 
     // Register global shortcut to toggle widget window focus
     globalShortcut.register('CommandOrControl+Alt+J', () => {

@@ -55,6 +55,29 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
 
   // Animation state
   const [ripplingTaskId, setRipplingTaskId] = useState<string | null>(null);
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (window.electronAPI && window.electronAPI.onHighlightTask) {
+      const unsubscribe = window.electronAPI.onHighlightTask((taskId) => {
+        setDetailedTask(null);
+        setIsAddingTask(false);
+        setHighlightedTaskId(taskId);
+        
+        setTimeout(() => {
+          const element = document.getElementById(`task-row-${taskId}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 100);
+
+        setTimeout(() => {
+          setHighlightedTaskId(null);
+        }, 3000);
+      });
+      return unsubscribe;
+    }
+  }, []);
 
   // Date Formatting for Subheader
   const todayFormatted = new Date().toLocaleDateString('en-US', {
@@ -191,15 +214,19 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
         ) : (
           sortedTasks.map(task => {
             const isRippling = ripplingTaskId === task.id;
+            const isHighlighted = highlightedTaskId === task.id;
 
             return (
               <div
                 key={task.id}
+                id={`task-row-${task.id}`}
                 className={`task-row ${task.completedAt ? 'completed' : ''} ${isRippling ? 'ripple-animation' : ''}`}
                 onClick={() => setDetailedTask(task)}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.015)',
-                  border: '1px solid rgba(255, 255, 255, 0.02)',
+                  background: isHighlighted ? 'rgba(0, 132, 255, 0.08)' : 'rgba(255, 255, 255, 0.015)',
+                  border: isHighlighted ? '1px solid var(--accent-color)' : '1px solid rgba(255, 255, 255, 0.02)',
+                  boxShadow: isHighlighted ? '0 0 12px rgba(0, 132, 255, 0.3)' : 'none',
+                  transform: isHighlighted ? 'scale(1.02)' : 'none',
                   borderRadius: '8px',
                   padding: '10px 12px',
                   marginBottom: '0',
@@ -207,7 +234,8 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
                   flexDirection: 'column',
                   alignItems: 'stretch',
                   gap: '8px',
-                  cursor: 'pointer'
+                  cursor: 'pointer',
+                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
               >
                 {/* Row 1: Checkbox & Text Content (Title & Description) */}

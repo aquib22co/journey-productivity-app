@@ -53,6 +53,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         openAtLogin: false,
         theme: 'dark',
         heatmapThresholds: { low: 1, medium: 3, high: 5 },
+        enableNotifications: true,
       };
       setDraftSettings(defaultSettings);
       onUpdateSettings(defaultSettings);
@@ -84,6 +85,24 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               type="checkbox" 
               checked={draftSettings.openAtLogin} 
               onChange={handleOpenAtLoginChange} 
+            />
+            <span className="slider"></span>
+          </label>
+        </div>
+
+        <div className="settings-row">
+          <div className="settings-row-label">
+            <span>Enable Notifications</span>
+            <span className="settings-row-sublabel">Get toast alerts for due tasks</span>
+          </div>
+          <label className="switch">
+            <input 
+              type="checkbox" 
+              checked={draftSettings.enableNotifications} 
+              onChange={(e) => setDraftSettings({
+                ...draftSettings,
+                enableNotifications: e.target.checked
+              })} 
             />
             <span className="slider"></span>
           </label>

@@ -19,6 +19,7 @@ export interface Settings {
     medium: number;
     high: number;
   };
+  enableNotifications: boolean;
 }
 
 export interface AppData {
@@ -38,6 +39,7 @@ export interface ElectronAPI {
   closeWindow: () => Promise<void>;
   dragWindow: (dx: number, dy: number) => void;
   restoreMainWindow: () => Promise<void>;
+  onHighlightTask: (callback: (taskId: string) => void) => () => void;
 }
 
 declare global {

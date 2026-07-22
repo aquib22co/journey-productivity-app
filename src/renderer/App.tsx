@@ -15,6 +15,7 @@ const DEFAULT_SETTINGS: Settings = {
   openAtLogin: false,
   theme: 'dark',
   heatmapThresholds: { low: 1, medium: 3, high: 5 },
+  enableNotifications: true,
 };
 
 const BadgeWindow: React.FC = () => {
