@@ -141,29 +141,29 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
     <div className="widget-card" style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px 18px' }}>
 
       {/* Header */}
-      <div className="widget-card-header" style={{ marginBottom: '0px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Circular Icon block */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '28px',
-            height: '28px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, rgba(0, 132, 255, 0.2), rgba(0, 70, 255, 0.4))',
-            border: '1px solid rgba(0, 132, 255, 0.3)',
-            color: '#0084ff',
-            flexShrink: 0
-          }}>
-            <History size={14} />
+      {!detailedTask && (
+        <div className="widget-card-header" style={{ marginBottom: '0px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Circular Icon block */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '28px',
+              height: '28px',
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, rgba(0, 132, 255, 0.2), rgba(0, 70, 255, 0.4))',
+              border: '1px solid rgba(0, 132, 255, 0.3)',
+              color: '#0084ff',
+              flexShrink: 0
+            }}>
+              <History size={14} />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+              <span className="widget-card-title" style={{ fontSize: '14px', fontWeight: '700', lineHeight: 1.2 }}>Activity History</span>
+              <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{subtitleText}</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-            <span className="widget-card-title" style={{ fontSize: '14px', fontWeight: '700', lineHeight: 1.2 }}>Activity History</span>
-            <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{subtitleText}</span>
-          </div>
-        </div>
-        {!detailedTask && (
           <button
             type="button"
             onClick={() => onShowFilterChange(!showFilter)}
@@ -185,8 +185,8 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
           >
             <Filter size={13} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Main Content Area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 0 }}>
