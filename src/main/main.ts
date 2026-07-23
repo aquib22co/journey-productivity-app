@@ -368,6 +368,8 @@ function checkDueTasks() {
   if (!settings.enableNotifications) return;
 
   const now = new Date();
+  let completionsChanged = false;
+  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   
   // 1. Check regular tasks
   tasks.forEach((task: any) => {
@@ -401,25 +403,48 @@ function checkDueTasks() {
   });
 
   // 2. Check recurring tasks
-  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const completionsToday = recurringCompletions?.[todayKey] || [];
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-
   if (Array.isArray(recurringGroups)) {
     recurringGroups.forEach((group: any) => {
       if (Array.isArray(group.subtasks)) {
         group.subtasks.forEach((subtask: any) => {
           if (subtask.intervalHours) {
-            const completions = completionsToday.filter((evt: any) => {
-              const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
-              return evtId === subtask.id;
-            });
+            // Check if subtask is enabled
+            if (subtask.enabled === false) return;
 
-            const lastEvent = completions
-              .map((evt: any) => typeof evt === 'string' ? { subtaskId: evt, timestamp: startOfDay.toISOString() } : evt)
-              .sort((a: any, b: any) => b.timestamp.localeCompare(a.timestamp))[0];
+            // Search all keys in recurringCompletions for the latest event
+            let latestEvent: any = null;
+            if (recurringCompletions && typeof recurringCompletions === 'object') {
+              Object.entries(recurringCompletions).forEach(([dateStr, items]: [string, any]) => {
+                if (Array.isArray(items)) {
+                  items.forEach((evt: any) => {
+                    const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+                    if (evtId === subtask.id) {
+                      const timestamp = typeof evt === 'string' 
+                        ? new Date(dateStr + 'T12:00:00').toISOString()
+                        : evt.timestamp;
+                      if (!latestEvent || timestamp > latestEvent.timestamp) {
+                        latestEvent = { subtaskId: evtId, timestamp };
+                      }
+                    }
+                  });
+                }
+              });
+            }
 
-            const lastTime = lastEvent ? new Date(lastEvent.timestamp) : startOfDay;
+            // If there's no completion event, initialize it to the current time so it starts counting down
+            const lastTime = latestEvent ? new Date(latestEvent.timestamp) : now;
+            if (!latestEvent) {
+              if (!recurringCompletions[todayKey]) {
+                recurringCompletions[todayKey] = [];
+              }
+              recurringCompletions[todayKey].push({
+                subtaskId: subtask.id,
+                timestamp: now.toISOString()
+              });
+              completionsChanged = true;
+              return;
+            }
+
             const nextDue = new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1000);
 
             if (nextDue <= now) {
@@ -439,9 +464,20 @@ function checkDueTasks() {
 
                   notification.show();
                 }
+
+                // Auto-reset
+                if (!recurringCompletions[todayKey]) {
+                  recurringCompletions[todayKey] = [];
+                }
+                recurringCompletions[todayKey].push({
+                  subtaskId: subtask.id,
+                  timestamp: now.toISOString()
+                });
+                completionsChanged = true;
               }
             }
           } else if (subtask.time) {
+            const completionsToday = recurringCompletions?.[todayKey] || [];
             const isCompleted = completionsToday.some((evt: any) => {
               const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
               return evtId === subtask.id;
@@ -478,6 +514,14 @@ function checkDueTasks() {
       }
     });
   }
+
+  if (completionsChanged) {
+    data.recurringCompletions = recurringCompletions;
+    writeData(data);
+    if (win && win.webContents) {
+      win.webContents.send('recurring-completions-updated', recurringCompletions);
+    }
+  }
 }
 
 function startDueTaskScheduler() {
@@ -485,8 +529,7 @@ function startDueTaskScheduler() {
   const { tasks, recurringGroups, recurringCompletions } = data;
   const now = new Date();
   const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  const completionsToday = recurringCompletions?.[todayKey] || [];
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  let completionsChanged = false;
   
   tasks.forEach((task: any) => {
     if (!task.completedAt) {
@@ -503,15 +546,40 @@ function startDueTaskScheduler() {
       if (Array.isArray(group.subtasks)) {
         group.subtasks.forEach((subtask: any) => {
           if (subtask.intervalHours) {
-            const completions = completionsToday.filter((evt: any) => {
-              const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
-              return evtId === subtask.id;
-            });
-            const lastEvent = completions
-              .map((evt: any) => typeof evt === 'string' ? { subtaskId: evt, timestamp: startOfDay.toISOString() } : evt)
-              .sort((a: any, b: any) => b.timestamp.localeCompare(a.timestamp))[0];
+            if (subtask.enabled === false) return;
 
-            const lastTime = lastEvent ? new Date(lastEvent.timestamp) : startOfDay;
+            let latestEvent: any = null;
+            if (recurringCompletions && typeof recurringCompletions === 'object') {
+              Object.entries(recurringCompletions).forEach(([dateStr, items]: [string, any]) => {
+                if (Array.isArray(items)) {
+                  items.forEach((evt: any) => {
+                    const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+                    if (evtId === subtask.id) {
+                      const timestamp = typeof evt === 'string' 
+                        ? new Date(dateStr + 'T12:00:00').toISOString()
+                        : evt.timestamp;
+                      if (!latestEvent || timestamp > latestEvent.timestamp) {
+                        latestEvent = { subtaskId: evtId, timestamp };
+                      }
+                    }
+                  });
+                }
+              });
+            }
+
+            const lastTime = latestEvent ? new Date(latestEvent.timestamp) : now;
+            if (!latestEvent) {
+              if (!recurringCompletions[todayKey]) {
+                recurringCompletions[todayKey] = [];
+              }
+              recurringCompletions[todayKey].push({
+                subtaskId: subtask.id,
+                timestamp: now.toISOString()
+              });
+              completionsChanged = true;
+              return;
+            }
+
             const nextDue = new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1000);
 
             if (nextDue <= now) {
@@ -519,6 +587,7 @@ function startDueTaskScheduler() {
               notifiedKeys.add(key);
             }
           } else if (subtask.time) {
+            const completionsToday = recurringCompletions?.[todayKey] || [];
             const isCompleted = completionsToday.some((evt: any) => {
               const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
               return evtId === subtask.id;
@@ -534,6 +603,11 @@ function startDueTaskScheduler() {
         });
       }
     });
+  }
+
+  if (completionsChanged) {
+    data.recurringCompletions = recurringCompletions;
+    writeData(data);
   }
 
   // Run check immediately, and then every 60 seconds

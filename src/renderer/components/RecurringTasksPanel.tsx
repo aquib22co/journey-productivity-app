@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Trash2, 
@@ -13,7 +13,7 @@ import {
   X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { RecurringGroup, RecurringCompletions, RecurringSubtask } from '../../shared/types';
+import type { RecurringGroup, RecurringCompletions, RecurringSubtask, RecurringCompletionEvent } from '../../shared/types';
 
 interface RecurringTasksPanelProps {
   groups: RecurringGroup[];
@@ -25,6 +25,8 @@ interface RecurringTasksPanelProps {
   onAddSubtask: (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => void;
   onDeleteSubtask: (groupId: string, subtaskId: string) => void;
   onUpdateSubtask: (groupId: string, subtaskId: string, updatedFields: Partial<RecurringSubtask>) => void;
+  onResetIntervalSubtask: (subtaskId: string, date: string) => void;
+  onUpdateGroup: (groupId: string, title: string) => void;
 }
 
 export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
@@ -37,6 +39,8 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
   onAddSubtask,
   onDeleteSubtask,
   onUpdateSubtask,
+  onResetIntervalSubtask,
+  onUpdateGroup,
 }) => {
   const [isManageMode, setIsManageMode] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -60,10 +64,118 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
   const [editSubtaskRemindBefore, setEditSubtaskRemindBefore] = useState(true);
   const [editSubtaskInterval, setEditSubtaskInterval] = useState('2');
   
+  // Group Editor Inline States
+  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
+  const [editGroupName, setEditGroupName] = useState('');
+
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     // Expand all groups by default
     return {};
   });
+
+  const [tick, setTick] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTick(t => t + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const getLatestCompletionEvent = (subtaskId: string, completionsData: RecurringCompletions): RecurringCompletionEvent | null => {
+    let latestEvent: RecurringCompletionEvent | null = null;
+    for (const dateKey of Object.keys(completionsData)) {
+      const dayCompletions = completionsData[dateKey] || [];
+      for (const evt of dayCompletions) {
+        const completionEvt: RecurringCompletionEvent = typeof evt === 'string'
+          ? { subtaskId: evt, timestamp: new Date(dateKey + 'T12:00:00').toISOString() }
+          : evt;
+        if (completionEvt.subtaskId === subtaskId) {
+          if (!latestEvent || completionEvt.timestamp > latestEvent.timestamp) {
+            latestEvent = completionEvt;
+          }
+        }
+      }
+    }
+    return latestEvent;
+  };
+
+  const formatCountdown = (subtaskId: string, intervalHours: number) => {
+    const latestEvent = getLatestCompletionEvent(subtaskId, completions);
+    const lastTime = latestEvent ? new Date(latestEvent.timestamp) : new Date();
+    const nextDue = new Date(lastTime.getTime() + intervalHours * 60 * 60 * 1000);
+    const diffMs = nextDue.getTime() - Date.now();
+    
+    if (diffMs <= 0) {
+      return '00:00:00';
+    }
+    
+    const secs = Math.floor(diffMs / 1000) % 60;
+    const mins = Math.floor(diffMs / (1000 * 60)) % 60;
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    
+    const pad = (num: number) => String(num).padStart(2, '0');
+    return `${pad(hours)}:${pad(mins)}:${pad(secs)}`;
+  };
+
+  const handleToggleIntervalSubtaskEnabled = (groupId: string, subtask: RecurringSubtask) => {
+    const newEnabled = subtask.enabled !== false ? false : true;
+    onUpdateSubtask(groupId, subtask.id, { enabled: newEnabled });
+    if (newEnabled) {
+      onResetIntervalSubtask(subtask.id, selectedDate);
+    }
+  };
+
+  useEffect(() => {
+    const todayStr = (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    })();
+    
+    if (selectedDate !== todayStr) return;
+
+    groups.forEach(group => {
+      group.subtasks.forEach(subtask => {
+        if (subtask.intervalHours && subtask.enabled !== false) {
+          const latestEvent = getLatestCompletionEvent(subtask.id, completions);
+          
+          if (!latestEvent) {
+            onResetIntervalSubtask(subtask.id, selectedDate);
+            return;
+          }
+
+          const lastTime = new Date(latestEvent.timestamp);
+          const nextDue = new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1000);
+          const diffMs = nextDue.getTime() - Date.now();
+
+          if (diffMs <= 0) {
+            onResetIntervalSubtask(subtask.id, selectedDate);
+
+            // Desktop notification (main thread also does this, but we can do a fallback standard notify)
+            try {
+              if (typeof window !== 'undefined' && 'Notification' in window) {
+                if (Notification.permission === 'granted') {
+                  new Notification(`${group.title}: ${subtask.title}`, {
+                    body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
+                  });
+                } else if (Notification.permission !== 'denied') {
+                  Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                      new Notification(`${group.title}: ${subtask.title}`, {
+                        body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
+                      });
+                    }
+                  });
+                }
+              }
+            } catch (e) {
+              console.error('Notification error:', e);
+            }
+          }
+        }
+      });
+    });
+  }, [tick, groups, completions, selectedDate]);
 
   const getLocalDateDisplay = (dateStr: string) => {
     const todayStr = (() => {
@@ -247,39 +359,38 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
     setEditingSubtaskId(null);
   };
 
+  const handleStartGroupEdit = (group: RecurringGroup) => {
+    setEditingGroupId(group.id);
+    setEditGroupName(group.title);
+  };
+
+  const handleSaveGroupEdit = (groupId: string) => {
+    if (!editGroupName.trim()) return;
+    onUpdateGroup(groupId, editGroupName.trim());
+    setEditingGroupId(null);
+  };
+
+  const handleCancelGroupEdit = () => {
+    setEditingGroupId(null);
+  };
+
   // Helper to determine check/uncheck status dynamically
   const isSubtaskCompleted = (subtask: any) => {
-    const dateCompletions = completions[selectedDate] || [];
+    if (subtask.intervalHours) {
+      if (subtask.enabled === false) return false;
+      const latestEvent = getLatestCompletionEvent(subtask.id, completions);
+      if (!latestEvent) return false;
+      const timeSince = Date.now() - new Date(latestEvent.timestamp).getTime();
+      const intervalMs = subtask.intervalHours * 60 * 60 * 1000;
+      return timeSince < intervalMs;
+    }
     
+    const dateCompletions = completions[selectedDate] || [];
     const events = dateCompletions.filter((evt: any) => {
       const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
       return evtId === subtask.id;
     });
-    
-    if (events.length === 0) return false;
-    
-    if (subtask.intervalHours) {
-      const todayStr = (() => {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      })();
-      
-      if (selectedDate === todayStr) {
-        const lastEvent = events
-          .map((evt: any) => typeof evt === 'string' ? { subtaskId: evt, timestamp: new Date(selectedDate + 'T12:00:00').toISOString() } : evt)
-          .sort((a: any, b: any) => b.timestamp.localeCompare(a.timestamp))[0];
-          
-        if (lastEvent) {
-          const timeSince = Date.now() - new Date(lastEvent.timestamp).getTime();
-          const intervalMs = subtask.intervalHours * 60 * 60 * 1000;
-          return timeSince < intervalMs;
-        }
-      } else {
-        return true;
-      }
-    }
-    
-    return true;
+    return events.length > 0;
   };
 
   return (
@@ -333,8 +444,8 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
               </div>
             ) : (
               groups.map(group => {
-                const totalSubtasks = group.subtasks.length;
-                const completedCount = group.subtasks.filter(st => isSubtaskCompleted(st)).length;
+                const totalSubtasks = group.subtasks.filter(st => !st.intervalHours).length;
+                const completedCount = group.subtasks.filter(st => !st.intervalHours && isSubtaskCompleted(st)).length;
                 const percent = totalSubtasks > 0 ? (completedCount / totalSubtasks) * 100 : 0;
                 const expanded = isGroupExpanded(group.id);
 
@@ -369,9 +480,11 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                           {group.title}
                         </span>
                       </div>
-                      <span style={{ fontSize: '11px', fontWeight: 500, color: percent === 100 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                        {completedCount}/{totalSubtasks}
-                      </span>
+                      {totalSubtasks > 0 && (
+                        <span style={{ fontSize: '11px', fontWeight: 500, color: percent === 100 ? 'var(--success-color)' : 'var(--text-muted)' }}>
+                          {completedCount}/{totalSubtasks}
+                        </span>
+                      )}
                     </div>
 
                     {/* Progress Bar */}
@@ -392,12 +505,69 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                     {/* Expandable Subtask List */}
                     {expanded && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px', borderTop: '1px solid rgba(255, 255, 255, 0.02)', paddingTop: '6px' }}>
-                        {totalSubtasks === 0 ? (
+                        {group.subtasks.length === 0 ? (
                           <span style={{ fontSize: '11px', color: 'var(--text-dim)', fontStyle: 'italic', paddingLeft: '18px' }}>
                             No subtasks. Tap gear to add.
                           </span>
                         ) : (
                           group.subtasks.map(subtask => {
+                            if (subtask.intervalHours) {
+                              const isEnabled = subtask.enabled !== false;
+                              return (
+                                <div
+                                  key={subtask.id}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '2px 0',
+                                    width: '100%'
+                                  }}
+                                >
+                                  <label className="switch" style={{ width: '32px', height: '18px', flexShrink: 0 }} title={isEnabled ? 'Disable Timer' : 'Enable Timer'}>
+                                    <input
+                                      type="checkbox"
+                                      checked={isEnabled}
+                                      onChange={() => handleToggleIntervalSubtaskEnabled(group.id, subtask)}
+                                    />
+                                    <span className="slider"></span>
+                                  </label>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1, minWidth: 0, gap: '8px' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '12.5px',
+                                        color: isEnabled ? 'var(--text-main)' : 'var(--text-muted)',
+                                        textOverflow: 'ellipsis',
+                                        overflow: 'hidden',
+                                        whiteSpace: 'nowrap',
+                                        fontWeight: 500
+                                      }}
+                                    >
+                                      {subtask.title}
+                                    </span>
+                                    <span
+                                      style={{
+                                        fontSize: '10.5px',
+                                        fontFamily: 'monospace',
+                                        fontWeight: 'bold',
+                                        color: isEnabled ? 'var(--accent-color)' : 'var(--text-dim)',
+                                        background: 'rgba(255, 255, 255, 0.02)',
+                                        padding: '2px 6px',
+                                        borderRadius: '4px',
+                                        border: '1px solid rgba(255, 255, 255, 0.04)',
+                                        flexShrink: 0,
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                      }}
+                                    >
+                                      {isEnabled ? formatCountdown(subtask.id, subtask.intervalHours) : 'Disabled'}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             const isCompleted = isSubtaskCompleted(subtask);
                             return (
                               <div
@@ -431,26 +601,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                                     {subtask.title}
                                   </span>
                                   
-                                  {subtask.intervalHours && (
-                                    <span
-                                      style={{
-                                        fontSize: '9.5px',
-                                        color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--text-dim)',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '2px',
-                                        background: 'rgba(255, 255, 255, 0.02)',
-                                        padding: '1px 5px',
-                                        borderRadius: '4px',
-                                        border: '1px solid rgba(255, 255, 255, 0.04)',
-                                        flexShrink: 0
-                                      }}
-                                    >
-                                      🕒 Every {subtask.intervalHours}h
-                                    </span>
-                                  )}
-
-                                  {!subtask.intervalHours && subtask.time && (
+                                  {subtask.time && (
                                     <span
                                       style={{
                                         fontSize: '9.5px',
@@ -466,7 +617,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                                       }}
                                       title={subtask.remind10MinBefore ? 'Reminds 10 min before' : 'Reminds at exact time'}
                                     >
-                                      🕒 {subtask.time}
+                                      {subtask.time}
                                       {subtask.remind10MinBefore && <span style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>• 10m</span>}
                                     </span>
                                   )}
@@ -525,19 +676,59 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                     marginBottom: index === groups.length - 1 ? '0px' : '16px'
                   }}
                 >
-                  {/* Group Title Row with Delete Group Button */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', flex: 1 }}>
-                      {group.title}
-                    </span>
-                    <button
-                      onClick={() => onDeleteGroup(group.id)}
-                      style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', opacity: 0.7 }}
-                      title="Delete Group"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
+                   {/* Group Title Row with Delete/Edit Group Button */}
+                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                     {editingGroupId === group.id ? (
+                       <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                         <input
+                           type="text"
+                           value={editGroupName}
+                           onChange={(e) => setEditGroupName(e.target.value)}
+                           className="input-field"
+                           style={{ padding: '4px 8px', fontSize: '12px', height: '26px', background: 'rgba(0,0,0,0.15)', flex: 1 }}
+                         />
+                         <Button
+                           onClick={() => handleSaveGroupEdit(group.id)}
+                           size="sm"
+                           style={{ background: 'var(--success-color)', height: '26px', width: '26px', padding: 0 }}
+                           title="Save changes"
+                         >
+                           <Check size={11} />
+                         </Button>
+                         <Button
+                           onClick={handleCancelGroupEdit}
+                           variant="ghost"
+                           size="sm"
+                           style={{ height: '26px', width: '26px', padding: 0, color: 'var(--text-muted)' }}
+                           title="Cancel"
+                         >
+                           <X size={11} />
+                         </Button>
+                       </div>
+                     ) : (
+                       <>
+                         <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', flex: 1 }}>
+                           {group.title}
+                         </span>
+                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                           <button
+                             onClick={() => handleStartGroupEdit(group)}
+                             style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', opacity: 0.7 }}
+                             title="Edit Group Title"
+                           >
+                             <Edit3 size={11} className="hover:text-blue-400 transition-colors" />
+                           </button>
+                           <button
+                             onClick={() => onDeleteGroup(group.id)}
+                             style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', opacity: 0.7 }}
+                             title="Delete Group"
+                           >
+                             <Trash2 size={13} />
+                           </button>
+                         </div>
+                       </>
+                     )}
+                   </div>
 
                   {/* Subtask Manager List */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid rgba(255, 255, 255, 0.02)', paddingTop: '6px' }}>
@@ -760,12 +951,12 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                             </span>
                             {st.intervalHours && (
                               <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
-                                🕒 Every {st.intervalHours}h
+                                Every {st.intervalHours}h
                               </span>
                             )}
                             {!st.intervalHours && st.time && (
                               <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
-                                🕒 {st.time} {st.remind10MinBefore ? '(10m before)' : '(exact)'}
+                                {st.time} {st.remind10MinBefore ? '(10m before)' : '(exact)'}
                               </span>
                             )}
                           </div>

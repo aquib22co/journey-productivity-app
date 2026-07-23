@@ -1,535 +1,417 @@
-import { BrowserWindow, Menu, Notification, Tray, app, globalShortcut, ipcMain, nativeImage, screen } from "electron";
-import * as path from "path";
-import * as fs from "fs";
-import { fileURLToPath } from "url";
+import { BrowserWindow as e, Menu as t, Notification as n, Tray as r, app as i, globalShortcut as a, ipcMain as o, nativeImage as s, screen as c } from "electron";
+import * as l from "path";
+import * as u from "fs";
+import { fileURLToPath as d } from "url";
 //#region src/main/main.ts
-var __filename = fileURLToPath(import.meta.url);
-var __dirname = path.dirname(__filename);
-var win = null;
-var badgeWin = null;
-var tray = null;
-var dataFilePath = path.join(app.getPath("userData"), "journey-widget-data.json");
-var defaultIconBase64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC";
-function readData() {
+var f = d(import.meta.url), p = l.dirname(f), m = null, h = null, g = null, _ = l.join(i.getPath("userData"), "journey-widget-data.json"), v = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC";
+function y() {
 	try {
-		if (fs.existsSync(dataFilePath)) {
-			const content = fs.readFileSync(dataFilePath, "utf-8");
-			const parsed = JSON.parse(content);
-			const completions = {};
-			if (parsed.recurringCompletions && typeof parsed.recurringCompletions === "object") Object.entries(parsed.recurringCompletions).forEach(([dateStr, items]) => {
-				if (Array.isArray(items)) completions[dateStr] = items.map((item) => {
-					if (typeof item === "string") {
-						const parts = dateStr.split("-");
+		if (u.existsSync(_)) {
+			let e = u.readFileSync(_, "utf-8"), t = JSON.parse(e), n = {};
+			return t.recurringCompletions && typeof t.recurringCompletions == "object" && Object.entries(t.recurringCompletions).forEach(([e, t]) => {
+				Array.isArray(t) && (n[e] = t.map((t) => {
+					if (typeof t == "string") {
+						let n = e.split("-");
 						return {
-							subtaskId: item,
-							timestamp: new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0).toISOString()
+							subtaskId: t,
+							timestamp: new Date(Number(n[0]), Number(n[1]) - 1, Number(n[2]), 12, 0, 0).toISOString()
 						};
 					}
-					return item;
-				});
-			});
-			return {
-				tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
-				recurringGroups: Array.isArray(parsed.recurringGroups) ? parsed.recurringGroups : [],
-				recurringCompletions: completions,
+					return t;
+				}));
+			}), {
+				tasks: Array.isArray(t.tasks) ? t.tasks : [],
+				recurringGroups: Array.isArray(t.recurringGroups) ? t.recurringGroups : [],
+				recurringCompletions: n,
 				settings: {
-					alwaysOnTop: true,
+					alwaysOnTop: !0,
 					opacity: .95,
-					openAtLogin: false,
+					openAtLogin: !1,
 					theme: "dark",
 					heatmapThresholds: {
 						low: 1,
 						medium: 3,
 						high: 5
 					},
-					enableNotifications: true,
-					...parsed.settings || {}
+					enableNotifications: !0,
+					...t.settings || {}
 				},
-				windowBounds: parsed.windowBounds || null
+				windowBounds: t.windowBounds || null
 			};
 		}
-	} catch (error) {
-		console.error("Error reading data:", error);
+	} catch (e) {
+		console.error("Error reading data:", e);
 	}
 	return {
 		tasks: [],
 		recurringGroups: [],
 		recurringCompletions: {},
 		settings: {
-			alwaysOnTop: true,
+			alwaysOnTop: !0,
 			opacity: .95,
-			openAtLogin: false,
+			openAtLogin: !1,
 			theme: "dark",
 			heatmapThresholds: {
 				low: 1,
 				medium: 3,
 				high: 5
 			},
-			enableNotifications: true
+			enableNotifications: !0
 		},
 		windowBounds: null
 	};
 }
-function writeData(data) {
+function b(e) {
 	try {
-		fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
-		return true;
-	} catch (error) {
-		console.error("Error writing data:", error);
-		return false;
+		return u.writeFileSync(_, JSON.stringify(e, null, 2), "utf-8"), !0;
+	} catch (e) {
+		return console.error("Error writing data:", e), !1;
 	}
 }
-function toggleMainWindow() {
-	if (!win) return;
-	const isVisible = win.isVisible();
-	const isFocused = win.isFocused();
-	if (!isVisible || badgeWin && badgeWin.isVisible()) {
-		if (badgeWin) badgeWin.hide();
-		win.show();
-		win.focus();
-		win.setAlwaysOnTop(true);
-	} else if (isFocused) {
-		win.hide();
-		if (!badgeWin) createBadgeWindow();
-		else badgeWin.show();
-	} else {
-		win.show();
-		win.focus();
-		win.setAlwaysOnTop(true);
-	}
+function x() {
+	if (!m) return;
+	let e = m.isVisible(), t = m.isFocused();
+	!e || h && h.isVisible() ? (h && h.hide(), m.show(), m.focus(), m.setAlwaysOnTop(!0)) : t ? (m.hide(), h ? h.show() : w()) : (m.show(), m.focus(), m.setAlwaysOnTop(!0));
 }
-function createTray() {
-	tray = new Tray(nativeImage.createFromDataURL(defaultIconBase64));
-	const contextMenu = Menu.buildFromTemplate([
+function S() {
+	g = new r(s.createFromDataURL(v));
+	let e = t.buildFromTemplate([
 		{
 			label: "Show Widget",
 			click: () => {
-				if (win) {
-					win.show();
-					win.focus();
-					win.setAlwaysOnTop(true);
-				}
+				m && (m.show(), m.focus(), m.setAlwaysOnTop(!0));
 			}
 		},
 		{
 			label: "Hide Widget",
 			click: () => {
-				if (win) win.hide();
+				m && m.hide();
 			}
 		},
 		{ type: "separator" },
 		{
 			label: "Quit",
 			click: () => {
-				app.quit();
+				i.quit();
 			}
 		}
 	]);
-	tray.setToolTip("Journey - Activity Widget");
-	tray.setContextMenu(contextMenu);
-	tray.on("click", () => {
-		toggleMainWindow();
+	g.setToolTip("Journey - Activity Widget"), g.setContextMenu(e), g.on("click", () => {
+		x();
 	});
 }
-function createWindow() {
-	const savedBounds = readData().windowBounds;
-	const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
-	let windowWidth = 960;
-	let windowHeight = 620;
-	if (savedBounds && typeof savedBounds.width === "number" && typeof savedBounds.height === "number") {
-		windowWidth = Math.max(800, Math.min(1200, savedBounds.width));
-		windowHeight = Math.max(800, Math.min(800, savedBounds.height));
-	}
-	let windowX = x + width - windowWidth - 24;
-	let windowY = y + height - windowHeight - 24;
-	if (savedBounds && typeof savedBounds.x === "number" && typeof savedBounds.y === "number") {
-		const savedCenterX = savedBounds.x + windowWidth / 2;
-		const savedCenterY = savedBounds.y + windowHeight / 2;
-		let isVisible = false;
-		const displays = screen.getAllDisplays();
-		for (const display of displays) {
-			const bounds = display.bounds;
-			if (savedCenterX >= bounds.x && savedCenterX <= bounds.x + bounds.width && savedCenterY >= bounds.y && savedCenterY <= bounds.y + bounds.height) {
-				isVisible = true;
+function C() {
+	let t = y().windowBounds, { width: n, height: r, x: i, y: a } = c.getPrimaryDisplay().workArea, o = 960, s = 620;
+	t && typeof t.width == "number" && typeof t.height == "number" && (o = Math.max(800, Math.min(1200, t.width)), s = Math.max(800, Math.min(800, t.height)));
+	let u = i + n - o - 24, d = a + r - s - 24;
+	if (t && typeof t.x == "number" && typeof t.y == "number") {
+		let e = t.x + o / 2, n = t.y + s / 2, r = !1, i = c.getAllDisplays();
+		for (let t of i) {
+			let i = t.bounds;
+			if (e >= i.x && e <= i.x + i.width && n >= i.y && n <= i.y + i.height) {
+				r = !0;
 				break;
 			}
 		}
-		if (isVisible) {
-			windowX = savedBounds.x;
-			windowY = savedBounds.y;
-		}
+		r && (u = t.x, d = t.y);
 	}
-	win = new BrowserWindow({
-		x: windowX,
-		y: windowY,
-		width: windowWidth,
-		height: windowHeight,
+	m = new e({
+		x: u,
+		y: d,
+		width: o,
+		height: s,
 		minWidth: 800,
 		minHeight: 600,
 		maxWidth: 1200,
 		maxHeight: 800,
-		frame: false,
-		transparent: true,
-		alwaysOnTop: false,
-		skipTaskbar: true,
+		frame: !1,
+		transparent: !0,
+		alwaysOnTop: !1,
+		skipTaskbar: !0,
 		backgroundMaterial: "none",
 		webPreferences: {
-			preload: path.join(__dirname, "preload.mjs"),
-			nodeIntegration: false,
-			contextIsolation: true
+			preload: l.join(p, "preload.mjs"),
+			nodeIntegration: !1,
+			contextIsolation: !0
 		}
-	});
-	if (process.env.VITE_DEV_SERVER_URL) win.loadURL(process.env.VITE_DEV_SERVER_URL);
-	else win.loadFile(path.join(__dirname, "../dist/index.html"));
-	let saveBoundsTimeout = null;
-	const saveWindowBoundsDebounced = () => {
-		if (saveBoundsTimeout) clearTimeout(saveBoundsTimeout);
-		saveBoundsTimeout = setTimeout(() => {
-			if (!win) return;
-			try {
-				const bounds = win.getBounds();
-				const data = readData();
-				data.windowBounds = {
-					x: bounds.x,
-					y: bounds.y,
-					width: bounds.width,
-					height: bounds.height
-				};
-				writeData(data);
-			} catch (error) {
-				console.error("Failed to save window bounds:", error);
+	}), process.env.VITE_DEV_SERVER_URL ? m.loadURL(process.env.VITE_DEV_SERVER_URL) : m.loadFile(l.join(p, "../dist/index.html"));
+	let f = null, h = () => {
+		f && clearTimeout(f), f = setTimeout(() => {
+			if (m) try {
+				let e = m.getBounds(), t = y();
+				t.windowBounds = {
+					x: e.x,
+					y: e.y,
+					width: e.width,
+					height: e.height
+				}, b(t);
+			} catch (e) {
+				console.error("Failed to save window bounds:", e);
 			}
 		}, 500);
 	};
-	win.on("move", saveWindowBoundsDebounced);
-	win.on("resize", saveWindowBoundsDebounced);
-	win.on("blur", () => {
-		if (win) win.setAlwaysOnTop(false);
-	});
-	win.on("closed", () => {
-		if (saveBoundsTimeout) clearTimeout(saveBoundsTimeout);
-		win = null;
+	m.on("move", h), m.on("resize", h), m.on("blur", () => {
+		m && m.setAlwaysOnTop(!1);
+	}), m.on("closed", () => {
+		f && clearTimeout(f), m = null;
 	});
 }
-function createBadgeWindow() {
-	console.log("[Main] createBadgeWindow called");
-	if (badgeWin) {
+function w() {
+	if (console.log("[Main] createBadgeWindow called"), h) {
 		console.log("[Main] badgeWin already exists");
 		return;
 	}
 	try {
-		const { width, height } = screen.getPrimaryDisplay().workArea;
-		const badgeSize = 70;
-		const badgeX = width - badgeSize - 24;
-		const badgeY = height - badgeSize - 24;
-		console.log(`[Main] Badge coordinates calculated: x=${badgeX}, y=${badgeY}, size=${badgeSize}`);
-		badgeWin = new BrowserWindow({
-			x: badgeX,
-			y: badgeY,
-			width: badgeSize,
-			height: badgeSize,
-			frame: false,
-			transparent: true,
-			alwaysOnTop: false,
-			skipTaskbar: true,
-			resizable: false,
+		let { width: t, height: n } = c.getPrimaryDisplay().workArea, r = t - 70 - 24, i = n - 70 - 24;
+		if (console.log(`[Main] Badge coordinates calculated: x=${r}, y=${i}, size=70`), h = new e({
+			x: r,
+			y: i,
+			width: 70,
+			height: 70,
+			frame: !1,
+			transparent: !0,
+			alwaysOnTop: !1,
+			skipTaskbar: !0,
+			resizable: !1,
 			backgroundMaterial: "none",
 			webPreferences: {
-				preload: path.join(__dirname, "preload.mjs"),
-				nodeIntegration: false,
-				contextIsolation: true
+				preload: l.join(p, "preload.mjs"),
+				nodeIntegration: !1,
+				contextIsolation: !0
 			}
-		});
-		if (process.env.VITE_DEV_SERVER_URL) {
-			const devUrl = `${process.env.VITE_DEV_SERVER_URL}?mode=badge`;
-			console.log(`[Main] Loading dev server URL: ${devUrl}`);
-			badgeWin.loadURL(devUrl);
+		}), process.env.VITE_DEV_SERVER_URL) {
+			let e = `${process.env.VITE_DEV_SERVER_URL}?mode=badge`;
+			console.log(`[Main] Loading dev server URL: ${e}`), h.loadURL(e);
 		} else {
-			const buildPath = path.join(__dirname, "../dist/index.html");
-			console.log(`[Main] Loading production index file: ${buildPath}`);
-			badgeWin.loadFile(buildPath, { query: { mode: "badge" } });
+			let e = l.join(p, "../dist/index.html");
+			console.log(`[Main] Loading production index file: ${e}`), h.loadFile(e, { query: { mode: "badge" } });
 		}
-		badgeWin.on("closed", () => {
-			console.log("[Main] badgeWin closed");
-			badgeWin = null;
+		h.on("closed", () => {
+			console.log("[Main] badgeWin closed"), h = null;
 		});
-	} catch (error) {
-		console.error("[Main] Exception caught in createBadgeWindow:", error);
+	} catch (e) {
+		console.error("[Main] Exception caught in createBadgeWindow:", e);
 	}
 }
-if (!app.requestSingleInstanceLock({ myKey: "journey-tracker" })) app.quit();
+if (!i.requestSingleInstanceLock({ myKey: "journey-tracker" })) i.quit();
 else {
-	app.on("second-instance", () => {
-		if (win) {
-			if (win.isMinimized()) win.restore();
-			if (!win.isVisible()) win.show();
-			win.focus();
-		}
+	i.on("second-instance", () => {
+		m && (m.isMinimized() && m.restore(), m.isVisible() || m.show(), m.focus());
 	});
-	const notifiedKeys = /* @__PURE__ */ new Set();
-	function getTaskDueTime(task) {
-		if (!task.dueDate) return null;
-		const [year, month, day] = task.dueDate.split("-").map(Number);
-		let hours = 0;
-		let minutes = 0;
-		if (task.time) {
-			const timeMatch = task.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-			if (timeMatch) {
-				hours = parseInt(timeMatch[1], 10);
-				minutes = parseInt(timeMatch[2], 10);
-				const ampm = timeMatch[3].toUpperCase();
-				if (ampm === "PM" && hours < 12) hours += 12;
-				else if (ampm === "AM" && hours === 12) hours = 0;
+	let t = /* @__PURE__ */ new Set();
+	function r(e) {
+		if (!e.dueDate) return null;
+		let [t, n, r] = e.dueDate.split("-").map(Number), i = 0, a = 0;
+		if (e.time) {
+			let t = e.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+			if (t) {
+				i = parseInt(t[1], 10), a = parseInt(t[2], 10);
+				let e = t[3].toUpperCase();
+				e === "PM" && i < 12 ? i += 12 : e === "AM" && i === 12 && (i = 0);
 			}
 		}
-		return new Date(year, month - 1, day, hours, minutes, 0, 0);
+		return new Date(t, n - 1, r, i, a, 0, 0);
 	}
-	function getRecurringSubtaskDueTime(timeStr, remind10MinBefore, date) {
-		const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-		if (!timeMatch) return null;
-		let hours = parseInt(timeMatch[1], 10);
-		let minutes = parseInt(timeMatch[2], 10);
-		const ampm = timeMatch[3].toUpperCase();
-		if (ampm === "PM" && hours < 12) hours += 12;
-		else if (ampm === "AM" && hours === 12) hours = 0;
-		const target = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
-		if (remind10MinBefore) target.setMinutes(target.getMinutes() - 10);
-		return target;
+	function o(e, t, n) {
+		let r = e.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+		if (!r) return null;
+		let i = parseInt(r[1], 10), a = parseInt(r[2], 10), o = r[3].toUpperCase();
+		o === "PM" && i < 12 ? i += 12 : o === "AM" && i === 12 && (i = 0);
+		let s = new Date(n.getFullYear(), n.getMonth(), n.getDate(), i, a, 0, 0);
+		return t && s.setMinutes(s.getMinutes() - 10), s;
 	}
-	function checkDueTasks() {
-		const { tasks, recurringGroups, recurringCompletions, settings } = readData();
-		if (!settings.enableNotifications) return;
-		const now = /* @__PURE__ */ new Date();
-		tasks.forEach((task) => {
-			if (task.completedAt) return;
-			const dueTime = getTaskDueTime(task);
-			if (!dueTime) return;
-			if (dueTime <= now) {
-				const key = `${task.id}:${task.dueDate || ""}:${task.time || ""}`;
-				if (!notifiedKeys.has(key)) {
-					notifiedKeys.add(key);
-					if (Notification.isSupported()) {
-						const notification = new Notification({
-							title: task.title,
-							body: task.description || "This task is now due."
-						});
-						notification.on("click", () => {
-							toggleMainWindow();
-							if (win && win.webContents) win.webContents.send("highlight-task", task.id);
-						});
-						notification.show();
-					}
+	function s() {
+		let e = y(), { tasks: i, recurringGroups: a, recurringCompletions: s, settings: c } = e;
+		if (!c.enableNotifications) return;
+		let l = /* @__PURE__ */ new Date(), u = !1, d = `${l.getFullYear()}-${String(l.getMonth() + 1).padStart(2, "0")}-${String(l.getDate()).padStart(2, "0")}`;
+		i.forEach((e) => {
+			if (e.completedAt) return;
+			let i = r(e);
+			if (i && i <= l) {
+				let r = `${e.id}:${e.dueDate || ""}:${e.time || ""}`;
+				if (!t.has(r) && (t.add(r), n.isSupported())) {
+					let t = new n({
+						title: e.title,
+						body: e.description || "This task is now due."
+					});
+					t.on("click", () => {
+						x(), m && m.webContents && m.webContents.send("highlight-task", e.id);
+					}), t.show();
 				}
 			}
-		});
-		const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-		const completionsToday = recurringCompletions?.[todayKey] || [];
-		const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-		if (Array.isArray(recurringGroups)) recurringGroups.forEach((group) => {
-			if (Array.isArray(group.subtasks)) group.subtasks.forEach((subtask) => {
-				if (subtask.intervalHours) {
-					const lastEvent = completionsToday.filter((evt) => {
-						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
-					}).map((evt) => typeof evt === "string" ? {
-						subtaskId: evt,
-						timestamp: startOfDay.toISOString()
-					} : evt).sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0];
-					const lastTime = lastEvent ? new Date(lastEvent.timestamp) : startOfDay;
-					if (new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1e3) <= now) {
-						const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
-						if (!notifiedKeys.has(key)) {
-							notifiedKeys.add(key);
-							if (Notification.isSupported()) {
-								const notification = new Notification({
-									title: `${group.title}: ${subtask.title}`,
-									body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`
+		}), Array.isArray(a) && a.forEach((e) => {
+			Array.isArray(e.subtasks) && e.subtasks.forEach((r) => {
+				if (r.intervalHours) {
+					if (r.enabled === !1) return;
+					let i = null;
+					s && typeof s == "object" && Object.entries(s).forEach(([e, t]) => {
+						Array.isArray(t) && t.forEach((t) => {
+							let n = typeof t == "string" ? t : t.subtaskId;
+							if (n === r.id) {
+								let r = typeof t == "string" ? (/* @__PURE__ */ new Date(e + "T12:00:00")).toISOString() : t.timestamp;
+								(!i || r > i.timestamp) && (i = {
+									subtaskId: n,
+									timestamp: r
 								});
-								notification.on("click", () => {
-									toggleMainWindow();
-								});
-								notification.show();
 							}
+						});
+					});
+					let a = i ? new Date(i.timestamp) : l;
+					if (!i) {
+						s[d] || (s[d] = []), s[d].push({
+							subtaskId: r.id,
+							timestamp: l.toISOString()
+						}), u = !0;
+						return;
+					}
+					if (new Date(a.getTime() + r.intervalHours * 60 * 60 * 1e3) <= l) {
+						let i = `recurring-interval:${r.id}:${a.getTime()}`;
+						if (!t.has(i)) {
+							if (t.add(i), n.isSupported()) {
+								let t = new n({
+									title: `${e.title}: ${r.title}`,
+									body: `Time for your habit: ${r.title} (due every ${r.intervalHours}h)`
+								});
+								t.on("click", () => {
+									x();
+								}), t.show();
+							}
+							s[d] || (s[d] = []), s[d].push({
+								subtaskId: r.id,
+								timestamp: l.toISOString()
+							}), u = !0;
 						}
 					}
-				} else if (subtask.time) {
-					if (completionsToday.some((evt) => {
-						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
-					})) return;
-					const notifyTime = getRecurringSubtaskDueTime(subtask.time, !!subtask.remind10MinBefore, now);
-					if (!notifyTime) return;
-					if (notifyTime <= now) {
-						const key = `recurring:${subtask.id}:${todayKey}`;
-						if (!notifiedKeys.has(key)) {
-							notifiedKeys.add(key);
-							if (Notification.isSupported()) {
-								const bodyText = subtask.remind10MinBefore ? `10 min left for your habit: ${subtask.title}` : `Time for your habit: ${subtask.title}`;
-								const notification = new Notification({
-									title: `${group.title}: ${subtask.title}`,
-									body: bodyText
-								});
-								notification.on("click", () => {
-									toggleMainWindow();
-								});
-								notification.show();
-							}
+				} else if (r.time) {
+					if ((s?.[d] || []).some((e) => (typeof e == "string" ? e : e.subtaskId) === r.id)) return;
+					let i = o(r.time, !!r.remind10MinBefore, l);
+					if (!i) return;
+					if (i <= l) {
+						let i = `recurring:${r.id}:${d}`;
+						if (!t.has(i) && (t.add(i), n.isSupported())) {
+							let t = r.remind10MinBefore ? `10 min left for your habit: ${r.title}` : `Time for your habit: ${r.title}`, i = new n({
+								title: `${e.title}: ${r.title}`,
+								body: t
+							});
+							i.on("click", () => {
+								x();
+							}), i.show();
 						}
 					}
 				}
 			});
-		});
+		}), u && (e.recurringCompletions = s, b(e), m && m.webContents && m.webContents.send("recurring-completions-updated", s));
 	}
-	function startDueTaskScheduler() {
-		const { tasks, recurringGroups, recurringCompletions } = readData();
-		const now = /* @__PURE__ */ new Date();
-		const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-		const completionsToday = recurringCompletions?.[todayKey] || [];
-		const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-		tasks.forEach((task) => {
-			if (!task.completedAt) {
-				const dueTime = getTaskDueTime(task);
-				if (dueTime && dueTime <= now) {
-					const key = `${task.id}:${task.dueDate || ""}:${task.time || ""}`;
-					notifiedKeys.add(key);
+	function c() {
+		let e = y(), { tasks: n, recurringGroups: i, recurringCompletions: a } = e, c = /* @__PURE__ */ new Date(), l = `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}-${String(c.getDate()).padStart(2, "0")}`, u = !1;
+		n.forEach((e) => {
+			if (!e.completedAt) {
+				let n = r(e);
+				if (n && n <= c) {
+					let n = `${e.id}:${e.dueDate || ""}:${e.time || ""}`;
+					t.add(n);
 				}
 			}
-		});
-		if (Array.isArray(recurringGroups)) recurringGroups.forEach((group) => {
-			if (Array.isArray(group.subtasks)) group.subtasks.forEach((subtask) => {
-				if (subtask.intervalHours) {
-					const lastEvent = completionsToday.filter((evt) => {
-						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
-					}).map((evt) => typeof evt === "string" ? {
-						subtaskId: evt,
-						timestamp: startOfDay.toISOString()
-					} : evt).sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0];
-					const lastTime = lastEvent ? new Date(lastEvent.timestamp) : startOfDay;
-					if (new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1e3) <= now) {
-						const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
-						notifiedKeys.add(key);
+		}), Array.isArray(i) && i.forEach((e) => {
+			Array.isArray(e.subtasks) && e.subtasks.forEach((e) => {
+				if (e.intervalHours) {
+					if (e.enabled === !1) return;
+					let n = null;
+					a && typeof a == "object" && Object.entries(a).forEach(([t, r]) => {
+						Array.isArray(r) && r.forEach((r) => {
+							let i = typeof r == "string" ? r : r.subtaskId;
+							if (i === e.id) {
+								let e = typeof r == "string" ? (/* @__PURE__ */ new Date(t + "T12:00:00")).toISOString() : r.timestamp;
+								(!n || e > n.timestamp) && (n = {
+									subtaskId: i,
+									timestamp: e
+								});
+							}
+						});
+					});
+					let r = n ? new Date(n.timestamp) : c;
+					if (!n) {
+						a[l] || (a[l] = []), a[l].push({
+							subtaskId: e.id,
+							timestamp: c.toISOString()
+						}), u = !0;
+						return;
 					}
-				} else if (subtask.time) {
-					if (!completionsToday.some((evt) => {
-						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
-					})) {
-						const notifyTime = getRecurringSubtaskDueTime(subtask.time, !!subtask.remind10MinBefore, now);
-						if (notifyTime && notifyTime <= now) {
-							const key = `recurring:${subtask.id}:${todayKey}`;
-							notifiedKeys.add(key);
-						}
+					if (new Date(r.getTime() + e.intervalHours * 60 * 60 * 1e3) <= c) {
+						let n = `recurring-interval:${e.id}:${r.getTime()}`;
+						t.add(n);
+					}
+				} else if (e.time && !(a?.[l] || []).some((t) => (typeof t == "string" ? t : t.subtaskId) === e.id)) {
+					let n = o(e.time, !!e.remind10MinBefore, c);
+					if (n && n <= c) {
+						let n = `recurring:${e.id}:${l}`;
+						t.add(n);
 					}
 				}
 			});
-		});
-		checkDueTasks();
-		setInterval(checkDueTasks, 6e4);
+		}), u && (e.recurringCompletions = a, b(e)), s(), setInterval(s, 6e4);
 	}
-	app.whenReady().then(() => {
-		createWindow();
-		createTray();
-		startDueTaskScheduler();
-		globalShortcut.register("CommandOrControl+Alt+J", () => {
-			toggleMainWindow();
-		});
-		app.on("activate", () => {
-			if (BrowserWindow.getAllWindows().length === 0) createWindow();
+	i.whenReady().then(() => {
+		C(), S(), c(), a.register("CommandOrControl+Alt+J", () => {
+			x();
+		}), i.on("activate", () => {
+			e.getAllWindows().length === 0 && C();
 		});
 	});
 }
-app.on("window-all-closed", () => {
-	if (process.platform !== "darwin") app.quit();
-});
-app.on("will-quit", () => {
-	globalShortcut.unregisterAll();
-});
-ipcMain.handle("get-tasks", () => {
-	return readData().tasks;
-});
-ipcMain.handle("save-tasks", (_event, tasks) => {
-	const data = readData();
-	data.tasks = tasks;
-	return writeData(data);
-});
-ipcMain.handle("get-recurring-groups", () => {
-	return readData().recurringGroups;
-});
-ipcMain.handle("save-recurring-groups", (_event, groups) => {
-	const data = readData();
-	data.recurringGroups = groups;
-	return writeData(data);
-});
-ipcMain.handle("get-recurring-completions", () => {
-	return readData().recurringCompletions;
-});
-ipcMain.handle("save-recurring-completions", (_event, completions) => {
-	const data = readData();
-	data.recurringCompletions = completions;
-	return writeData(data);
-});
-ipcMain.handle("get-settings", () => {
-	return readData().settings;
-});
-ipcMain.handle("save-settings", (_event, settings) => {
-	const data = readData();
-	data.settings = settings;
-	const success = writeData(data);
-	if (success && win) win.setAlwaysOnTop(false);
+i.on("window-all-closed", () => {
+	process.platform !== "darwin" && i.quit();
+}), i.on("will-quit", () => {
+	a.unregisterAll();
+}), o.handle("get-tasks", () => y().tasks), o.handle("save-tasks", (e, t) => {
+	let n = y();
+	return n.tasks = t, b(n);
+}), o.handle("get-recurring-groups", () => y().recurringGroups), o.handle("save-recurring-groups", (e, t) => {
+	let n = y();
+	return n.recurringGroups = t, b(n);
+}), o.handle("get-recurring-completions", () => y().recurringCompletions), o.handle("save-recurring-completions", (e, t) => {
+	let n = y();
+	return n.recurringCompletions = t, b(n);
+}), o.handle("get-settings", () => y().settings), o.handle("save-settings", (e, t) => {
+	let n = y();
+	n.settings = t;
+	let r = b(n);
+	r && m && m.setAlwaysOnTop(!1);
 	try {
-		app.setLoginItemSettings({
-			openAtLogin: settings.openAtLogin,
-			path: app.getPath("exe")
+		i.setLoginItemSettings({
+			openAtLogin: t.openAtLogin,
+			path: i.getPath("exe")
 		});
-	} catch (error) {
-		console.error("Failed to set login items settings:", error);
+	} catch (e) {
+		console.error("Failed to set login items settings:", e);
 	}
-	return success;
-});
-ipcMain.handle("set-always-on-top", (_event, _alwaysOnTop) => {
-	if (win) win.setAlwaysOnTop(false);
-});
-ipcMain.handle("set-opacity", (_event, _opacity) => {});
-ipcMain.handle("minimize-window", () => {
-	console.log("[Main] IPC minimize-window handler invoked");
-	if (win) try {
-		console.log("[Main] Hiding main window...");
-		win.hide();
-		if (!badgeWin) {
-			console.log("[Main] badgeWin is null. Spawning badge...");
-			createBadgeWindow();
-		} else {
-			console.log("[Main] badgeWin is already spawned. Showing badge...");
-			badgeWin.show();
-		}
-	} catch (error) {
-		console.error("[Main] Error handling minimize-window IPC:", error);
+	return r;
+}), o.handle("set-always-on-top", (e, t) => {
+	m && m.setAlwaysOnTop(!1);
+}), o.handle("set-opacity", (e, t) => {}), o.handle("minimize-window", () => {
+	if (console.log("[Main] IPC minimize-window handler invoked"), m) try {
+		console.log("[Main] Hiding main window..."), m.hide(), h ? (console.log("[Main] badgeWin is already spawned. Showing badge..."), h.show()) : (console.log("[Main] badgeWin is null. Spawning badge..."), w());
+	} catch (e) {
+		console.error("[Main] Error handling minimize-window IPC:", e);
 	}
 	else console.warn("[Main] Cannot minimize: win is null!");
-});
-ipcMain.handle("hide-window", () => {
-	if (win) win.hide();
-});
-ipcMain.handle("close-window", () => {
-	console.log("[Main] IPC close-window handler invoked, quitting app...");
-	if (badgeWin) try {
-		badgeWin.close();
+}), o.handle("hide-window", () => {
+	m && m.hide();
+}), o.handle("close-window", () => {
+	if (console.log("[Main] IPC close-window handler invoked, quitting app..."), h) try {
+		h.close();
 	} catch {}
-	if (win) try {
-		win.close();
+	if (m) try {
+		m.close();
 	} catch {}
-	app.quit();
-});
-ipcMain.handle("restore-main-window", () => {
-	if (badgeWin) badgeWin.hide();
-	if (win) {
-		win.show();
-		win.focus();
-		win.setAlwaysOnTop(true);
-	}
-});
-ipcMain.on("drag-window", (event, { dx, dy }) => {
-	const senderWin = BrowserWindow.fromWebContents(event.sender);
-	if (senderWin) {
-		const [x, y] = senderWin.getPosition();
-		senderWin.setPosition(Math.round(x + dx), Math.round(y + dy));
+	i.quit();
+}), o.handle("restore-main-window", () => {
+	h && h.hide(), m && (m.show(), m.focus(), m.setAlwaysOnTop(!0));
+}), o.on("drag-window", (t, { dx: n, dy: r }) => {
+	let i = e.fromWebContents(t.sender);
+	if (i) {
+		let [e, t] = i.getPosition();
+		i.setPosition(Math.round(e + n), Math.round(t + r));
 	}
 });
 //#endregion

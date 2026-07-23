@@ -19,6 +19,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
       ipcRenderer.removeListener('highlight-task', subscription);
     };
   },
+  onRecurringCompletionsUpdated: (callback: (completions: any) => void) => {
+    const subscription = (_event: any, completions: any) => callback(completions);
+    ipcRenderer.on('recurring-completions-updated', subscription);
+    return () => {
+      ipcRenderer.removeListener('recurring-completions-updated', subscription);
+    };
+  },
   getRecurringGroups: () => ipcRenderer.invoke('get-recurring-groups'),
   saveRecurringGroups: (groups: any) => ipcRenderer.invoke('save-recurring-groups', groups),
   getRecurringCompletions: () => ipcRenderer.invoke('get-recurring-completions'),

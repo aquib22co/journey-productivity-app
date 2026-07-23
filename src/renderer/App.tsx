@@ -160,6 +160,15 @@ const App: React.FC = () => {
     loadInitialData();
   }, []);
 
+  useEffect(() => {
+    if (window.electronAPI && window.electronAPI.onRecurringCompletionsUpdated) {
+      const unsubscribe = window.electronAPI.onRecurringCompletionsUpdated((newCompletions) => {
+        setRecurringCompletions(newCompletions);
+      });
+      return unsubscribe;
+    }
+  }, []);
+
   // Save tasks helper
   const handleSaveTasks = async (newTasks: Task[]) => {
     setTasks(newTasks);
@@ -295,7 +304,7 @@ const App: React.FC = () => {
     return new Date(year, month - 1, day, hours, minutes, 0, 0);
   };
 
-  const handleToggleSubtask = (groupId: string, subtaskId: string, date: string) => {
+  const handleToggleSubtask = (_groupId: string, subtaskId: string, date: string) => {
     let isInterval = false;
     for (const group of recurringGroups) {
       const st = group.subtasks.find(s => s.id === subtaskId);
@@ -412,17 +421,66 @@ const App: React.FC = () => {
     handleSaveRecurringGroups(filtered);
   };
 
-  const handleAddRecurringSubtask = (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => {
+  const handleUpdateRecurringGroup = (groupId: string, title: string) => {
     const updated = recurringGroups.map(g => {
       if (g.id === groupId) {
         return {
           ...g,
-          subtasks: [...g.subtasks, { id: crypto.randomUUID(), title, time, remind10MinBefore, intervalHours }]
+          title
         };
       }
       return g;
     });
     handleSaveRecurringGroups(updated);
+  };
+
+  const handleResetIntervalSubtask = (subtaskId: string, date: string) => {
+    setRecurringCompletions(prev => {
+      const currentCompletionsForDate = prev[date] || [];
+      const newCompletionsForDate = [
+        ...currentCompletionsForDate,
+        { subtaskId, timestamp: new Date().toISOString() }
+      ];
+      const newCompletions = {
+        ...prev,
+        [date]: newCompletionsForDate
+      };
+      
+      if (window.electronAPI) {
+        window.electronAPI.saveRecurringCompletions(newCompletions);
+      } else {
+        localStorage.setItem('journey_recurring_completions', JSON.stringify(newCompletions));
+      }
+      
+      return newCompletions;
+    });
+  };
+
+  const handleAddRecurringSubtask = (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => {
+    const newSubtaskId = crypto.randomUUID();
+    const updated = recurringGroups.map(g => {
+      if (g.id === groupId) {
+        return {
+          ...g,
+          subtasks: [...g.subtasks, { 
+            id: newSubtaskId, 
+            title, 
+            time, 
+            remind10MinBefore, 
+            intervalHours,
+            enabled: intervalHours ? true : undefined
+          }]
+        };
+      }
+      return g;
+    });
+    handleSaveRecurringGroups(updated);
+
+    if (intervalHours) {
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      handleResetIntervalSubtask(newSubtaskId, todayKey);
+    }
   };
 
   const handleDeleteRecurringSubtask = (groupId: string, subtaskId: string) => {
@@ -457,6 +515,12 @@ const App: React.FC = () => {
       return g;
     });
     handleSaveRecurringGroups(updated);
+
+    if (updatedFields.intervalHours !== undefined || updatedFields.enabled === true) {
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      handleResetIntervalSubtask(subtaskId, todayKey);
+    }
   };
 
   const handleDeleteTask = (id: string) => {
@@ -587,27 +651,26 @@ const App: React.FC = () => {
 
         let groupTitle = '';
         let subtaskTitle = '';
-        let subtaskTime = undefined;
         let intervalHours = undefined;
         for (const group of recurringGroups) {
           const st = group.subtasks.find(s => s.id === subtaskId);
           if (st) {
             groupTitle = group.title;
             subtaskTitle = st.title;
-            subtaskTime = st.time;
             intervalHours = st.intervalHours;
             break;
           }
         }
         
         if (subtaskTitle) {
+          if (intervalHours) {
+            return;
+          }
           const timeDisplay = new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
             
           virtualTasks.push({
             id: `recurring-completed|${subtaskId}|${timestamp}|${dateKey}`,
-            title: intervalHours 
-              ? `${groupTitle}: ${subtaskTitle} (every ${intervalHours}h)`
-              : `${groupTitle}: ${subtaskTitle}`,
+            title: `${groupTitle}: ${subtaskTitle}`,
             createdAt: timestamp,
             completedAt: timestamp,
             category: 'general',
@@ -779,6 +842,8 @@ const App: React.FC = () => {
                   onAddSubtask={handleAddRecurringSubtask}
                   onDeleteSubtask={handleDeleteRecurringSubtask}
                   onUpdateSubtask={handleUpdateRecurringSubtask}
+                  onResetIntervalSubtask={handleResetIntervalSubtask}
+                  onUpdateGroup={handleUpdateRecurringGroup}
                 />
               </div>
 

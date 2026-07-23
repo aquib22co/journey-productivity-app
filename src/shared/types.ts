@@ -28,6 +28,7 @@ export interface RecurringSubtask {
   time?: string;
   remind10MinBefore?: boolean;
   intervalHours?: number;
+  enabled?: boolean;
 }
 
 export interface RecurringGroup {
@@ -67,6 +68,7 @@ export interface ElectronAPI {
   saveRecurringGroups: (groups: RecurringGroup[]) => Promise<boolean>;
   getRecurringCompletions: () => Promise<RecurringCompletions>;
   saveRecurringCompletions: (completions: RecurringCompletions) => Promise<boolean>;
+  onRecurringCompletionsUpdated?: (callback: (completions: RecurringCompletions) => void) => () => void;
 }
 
 declare global {
