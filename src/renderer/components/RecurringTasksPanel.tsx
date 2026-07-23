@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import {
-  Plus,
-  Trash2,
-  Settings2,
-  Check,
-  ChevronDown,
-  ChevronRight,
+import { 
+  Plus, 
+  Trash2, 
+  Settings2, 
+  Check, 
+  ChevronDown, 
+  ChevronRight, 
   Sparkles,
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Edit3,
+  X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import type { RecurringGroup, RecurringCompletions } from '../../shared/types';
+import type { RecurringGroup, RecurringCompletions, RecurringSubtask } from '../../shared/types';
 
 interface RecurringTasksPanelProps {
   groups: RecurringGroup[];
@@ -22,6 +24,7 @@ interface RecurringTasksPanelProps {
   onDeleteGroup: (groupId: string) => void;
   onAddSubtask: (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => void;
   onDeleteSubtask: (groupId: string, subtaskId: string) => void;
+  onUpdateSubtask: (groupId: string, subtaskId: string, updatedFields: Partial<RecurringSubtask>) => void;
 }
 
 export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
@@ -33,11 +36,12 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
   onDeleteGroup,
   onAddSubtask,
   onDeleteSubtask,
+  onUpdateSubtask,
 }) => {
   const [isManageMode, setIsManageMode] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-
-  // Subtask Form States
+  
+  // Subtask Creator Form States
   const [newSubtaskNames, setNewSubtaskNames] = useState<Record<string, string>>({});
   const [subtaskMode, setSubtaskMode] = useState<Record<string, 'time' | 'interval'>>({});
   const [newSubtaskHour, setNewSubtaskHour] = useState<Record<string, string>>({});
@@ -46,6 +50,16 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
   const [newSubtaskRemindBefore, setNewSubtaskRemindBefore] = useState<Record<string, boolean>>({});
   const [newSubtaskInterval, setNewSubtaskInterval] = useState<Record<string, string>>({});
 
+  // Subtask Editor Inline States
+  const [editingSubtaskId, setEditingSubtaskId] = useState<string | null>(null);
+  const [editSubtaskTitle, setEditSubtaskTitle] = useState('');
+  const [editSubtaskMode, setEditSubtaskMode] = useState<'time' | 'interval'>('time');
+  const [editSubtaskHour, setEditSubtaskHour] = useState('');
+  const [editSubtaskMin, setEditSubtaskMin] = useState('00');
+  const [editSubtaskAmpm, setEditSubtaskAmpm] = useState<'AM' | 'PM'>('AM');
+  const [editSubtaskRemindBefore, setEditSubtaskRemindBefore] = useState(true);
+  const [editSubtaskInterval, setEditSubtaskInterval] = useState('2');
+  
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     // Expand all groups by default
     return {};
@@ -169,28 +183,92 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
     setNewSubtaskInterval(prev => ({ ...prev, [groupId]: val }));
   };
 
+  // Editor specific handlers
+  const handleStartEdit = (st: RecurringSubtask) => {
+    setEditingSubtaskId(st.id);
+    setEditSubtaskTitle(st.title);
+    if (st.intervalHours) {
+      setEditSubtaskMode('interval');
+      setEditSubtaskInterval(String(st.intervalHours));
+      setEditSubtaskHour('');
+      setEditSubtaskMin('00');
+      setEditSubtaskAmpm('AM');
+      setEditSubtaskRemindBefore(true);
+    } else {
+      setEditSubtaskMode('time');
+      setEditSubtaskInterval('2');
+      if (st.time) {
+        const timeMatch = st.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+        if (timeMatch) {
+          setEditSubtaskHour(parseInt(timeMatch[1], 10).toString());
+          setEditSubtaskMin(timeMatch[2]);
+          setEditSubtaskAmpm(timeMatch[3].toUpperCase() as 'AM' | 'PM');
+        } else {
+          setEditSubtaskHour('');
+          setEditSubtaskMin('00');
+          setEditSubtaskAmpm('AM');
+        }
+      } else {
+        setEditSubtaskHour('');
+        setEditSubtaskMin('00');
+        setEditSubtaskAmpm('AM');
+      }
+      setEditSubtaskRemindBefore(st.remind10MinBefore !== false);
+    }
+  };
+
+  const handleSaveEdit = (groupId: string, subtaskId: string) => {
+    if (!editSubtaskTitle.trim()) return;
+
+    let time: string | undefined = undefined;
+    let remind10MinBefore: boolean | undefined = undefined;
+    let intervalHours: number | undefined = undefined;
+
+    if (editSubtaskMode === 'interval') {
+      intervalHours = parseInt(editSubtaskInterval, 10);
+    } else {
+      if (editSubtaskHour) {
+        time = `${editSubtaskHour.padStart(2, '0')}:${editSubtaskMin.padStart(2, '0')} ${editSubtaskAmpm}`;
+        remind10MinBefore = editSubtaskRemindBefore;
+      }
+    }
+
+    onUpdateSubtask(groupId, subtaskId, {
+      title: editSubtaskTitle.trim(),
+      time,
+      remind10MinBefore,
+      intervalHours
+    });
+
+    setEditingSubtaskId(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingSubtaskId(null);
+  };
+
   // Helper to determine check/uncheck status dynamically
   const isSubtaskCompleted = (subtask: any) => {
     const dateCompletions = completions[selectedDate] || [];
-
+    
     const events = dateCompletions.filter((evt: any) => {
       const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
       return evtId === subtask.id;
     });
-
+    
     if (events.length === 0) return false;
-
+    
     if (subtask.intervalHours) {
       const todayStr = (() => {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       })();
-
+      
       if (selectedDate === todayStr) {
         const lastEvent = events
           .map((evt: any) => typeof evt === 'string' ? { subtaskId: evt, timestamp: new Date(selectedDate + 'T12:00:00').toISOString() } : evt)
           .sort((a: any, b: any) => b.timestamp.localeCompare(a.timestamp))[0];
-
+          
         if (lastEvent) {
           const timeSince = Date.now() - new Date(lastEvent.timestamp).getTime();
           const intervalMs = subtask.intervalHours * 60 * 60 * 1000;
@@ -200,13 +278,13 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
         return true;
       }
     }
-
+    
     return true;
   };
 
   return (
     <div className="widget-card" style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-
+      
       {/* Header */}
       <div className="widget-card-header" style={{ marginBottom: '4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -215,12 +293,12 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
             {isManageMode ? 'Manage Recurring' : 'Daily Habits'}
           </span>
         </div>
-
+        
         <Button
           variant="outline"
           size="sm"
           onClick={() => setIsManageMode(!isManageMode)}
-          style={{
+          style={{ 
             height: '28px',
             width: '28px',
             padding: 0,
@@ -261,9 +339,9 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                 const expanded = isGroupExpanded(group.id);
 
                 return (
-                  <div
+                  <div 
                     key={group.id}
-                    style={{
+                    style={{ 
                       background: 'rgba(255, 255, 255, 0.01)',
                       border: '1px solid rgba(255, 255, 255, 0.03)',
                       borderRadius: '8px',
@@ -275,11 +353,11 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                     }}
                   >
                     {/* Header Row: Title & Expand Toggle */}
-                    <div
+                    <div 
                       onClick={() => toggleExpand(group.id)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
                         justifyContent: 'space-between',
                         cursor: 'pointer',
                         userSelect: 'none'
@@ -352,7 +430,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                                   >
                                     {subtask.title}
                                   </span>
-
+                                  
                                   {subtask.intervalHours && (
                                     <span
                                       style={{
@@ -408,7 +486,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
       ) : (
         /* Manage Mode View */
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: '14px' }} className="no-drag">
-
+          
           {/* Add Group Form */}
           <form onSubmit={handleCreateGroup} style={{ display: 'flex', gap: '8px' }}>
             <input
@@ -438,7 +516,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
               groups.map((group, index) => (
                 <div
                   key={group.id}
-                  style={{
+                  style={{ 
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '8px',
@@ -463,35 +541,253 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
 
                   {/* Subtask Manager List */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid rgba(255, 255, 255, 0.02)', paddingTop: '6px' }}>
-                    {group.subtasks.map(st => (
-                      <div
-                        key={st.id}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
-                          <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            • {st.title}
-                          </span>
-                          {st.intervalHours && (
-                            <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
-                              🕒 Every {st.intervalHours}h
-                            </span>
-                          )}
-                          {!st.intervalHours && st.time && (
-                            <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
-                              🕒 {st.time} {st.remind10MinBefore ? '(10m before)' : '(exact)'}
-                            </span>
-                          )}
-                        </div>
-                        <button
-                          onClick={() => onDeleteSubtask(group.id, st.id)}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', paddingLeft: '4px' }}
-                          title="Delete Subtask"
+                    {group.subtasks.map(st => {
+                      const isEditing = editingSubtaskId === st.id;
+
+                      if (isEditing) {
+                        return (
+                          <div 
+                            key={st.id}
+                            style={{ 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: '6px', 
+                              padding: '6px', 
+                              background: 'rgba(255,255,255,0.02)', 
+                              border: '1px solid rgba(255,255,255,0.06)', 
+                              borderRadius: '6px',
+                              marginTop: '4px',
+                              marginBottom: '4px'
+                            }}
+                          >
+                            {/* Edit Name Row */}
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <input 
+                                type="text"
+                                placeholder="Edit name..."
+                                value={editSubtaskTitle}
+                                onChange={(e) => setEditSubtaskTitle(e.target.value)}
+                                className="input-field"
+                                style={{ padding: '4px 8px', fontSize: '11.5px', height: '26px', background: 'rgba(0,0,0,0.15)', flex: 1 }}
+                              />
+                              <Button 
+                                onClick={() => handleSaveEdit(group.id, st.id)}
+                                size="sm"
+                                style={{ background: 'var(--success-color)', height: '26px', width: '26px', padding: 0 }}
+                                title="Save changes"
+                              >
+                                <Check size={11} />
+                              </Button>
+                              <Button 
+                                onClick={handleCancelEdit}
+                                variant="ghost"
+                                size="sm"
+                                style={{ height: '26px', width: '26px', padding: 0, color: 'var(--text-muted)' }}
+                                title="Cancel editing"
+                              >
+                                <X size={11} />
+                              </Button>
+                            </div>
+
+                            {/* Edit Mode Toggle */}
+                            <div style={{ display: 'flex', gap: '8px', fontSize: '9.5px', color: 'var(--text-dim)', alignItems: 'center' }}>
+                              <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reminder:</span>
+                              <button 
+                                type="button" 
+                                onClick={() => setEditSubtaskMode('time')}
+                                style={{
+                                  background: editSubtaskMode === 'time' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                  border: '1px solid ' + (editSubtaskMode === 'time' ? 'rgba(255,255,255,0.1)' : 'transparent'),
+                                  color: editSubtaskMode === 'time' ? 'var(--text-main)' : 'var(--text-dim)',
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Specific Time
+                              </button>
+                              <button 
+                                type="button" 
+                                onClick={() => setEditSubtaskMode('interval')}
+                                style={{
+                                  background: editSubtaskMode === 'interval' ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                  border: '1px solid ' + (editSubtaskMode === 'interval' ? 'rgba(255,255,255,0.1)' : 'transparent'),
+                                  color: editSubtaskMode === 'interval' ? 'var(--text-main)' : 'var(--text-dim)',
+                                  padding: '1px 5px',
+                                  borderRadius: '3px',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                Interval Timer
+                              </button>
+                            </div>
+
+                            {/* Edit Specific Config Row */}
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                              {editSubtaskMode === 'time' && (
+                                <>
+                                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center', height: '26px' }}>
+                                    <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Time:</span>
+                                    <select
+                                      className="input-field"
+                                      style={{ padding: '2px 4px', fontSize: '11px', height: '100%', width: '46px', background: 'rgba(7, 10, 17, 0.95)' }}
+                                      value={editSubtaskHour}
+                                      onChange={(e) => {
+                                        setEditSubtaskHour(e.target.value);
+                                        if (e.target.value && !editSubtaskMin) setEditSubtaskMin('00');
+                                      }}
+                                    >
+                                      <option value="">--</option>
+                                      {Array.from({ length: 12 }, (_, i) => String(i + 1)).map(h => (
+                                        <option key={h} value={h}>{h}</option>
+                                      ))}
+                                    </select>
+                                    <span style={{ color: 'var(--text-muted)', fontSize: '12px' }}>:</span>
+                                    <input
+                                      type="text"
+                                      className="input-field"
+                                      style={{ padding: '2px 4px', fontSize: '11px', height: '100%', width: '36px', textAlign: 'center', background: 'rgba(7, 10, 17, 0.95)' }}
+                                      placeholder="00"
+                                      maxLength={2}
+                                      value={editSubtaskMin}
+                                      onChange={(e) => {
+                                        const val = e.target.value.replace(/\D/g, '');
+                                        if (val === '') { setEditSubtaskMin(''); return; }
+                                        const num = parseInt(val);
+                                        if (num >= 0 && num <= 59) setEditSubtaskMin(val.slice(0, 2));
+                                      }}
+                                      onBlur={() => {
+                                        if (editSubtaskMin === '') setEditSubtaskMin('00');
+                                        else setEditSubtaskMin(editSubtaskMin.padStart(2, '0'));
+                                      }}
+                                      disabled={!editSubtaskHour}
+                                    />
+                                    <div style={{ 
+                                      display: 'flex', 
+                                      borderRadius: '4px', 
+                                      overflow: 'hidden', 
+                                      border: '1px solid rgba(255, 255, 255, 0.08)', 
+                                      background: 'rgba(255, 255, 255, 0.02)',
+                                      height: '100%',
+                                      opacity: editSubtaskHour ? 1 : 0.5,
+                                      pointerEvents: editSubtaskHour ? 'auto' : 'none'
+                                    }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditSubtaskAmpm('AM')}
+                                        style={{
+                                          padding: '0 6px',
+                                          fontSize: '9.5px',
+                                          height: '100%',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                          background: editSubtaskAmpm === 'AM' ? 'var(--accent-color)' : 'transparent',
+                                          color: editSubtaskAmpm === 'AM' ? '#ffffff' : 'var(--text-muted)',
+                                          fontWeight: editSubtaskAmpm === 'AM' ? 'bold' : 'normal',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        AM
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditSubtaskAmpm('PM')}
+                                        style={{
+                                          padding: '0 6px',
+                                          fontSize: '9.5px',
+                                          height: '100%',
+                                          border: 'none',
+                                          cursor: 'pointer',
+                                          background: editSubtaskAmpm === 'PM' ? 'var(--accent-color)' : 'transparent',
+                                          color: editSubtaskAmpm === 'PM' ? '#ffffff' : 'var(--text-muted)',
+                                          fontWeight: editSubtaskAmpm === 'PM' ? 'bold' : 'normal',
+                                          transition: 'all 0.15s ease'
+                                        }}
+                                      >
+                                        PM
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {editSubtaskHour && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                      <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Remind:</span>
+                                      <label className="switch" style={{ width: '32px', height: '18px' }}>
+                                        <input 
+                                          type="checkbox" 
+                                          checked={editSubtaskRemindBefore !== false} 
+                                          onChange={() => setEditSubtaskRemindBefore(!editSubtaskRemindBefore)} 
+                                        />
+                                        <span className="slider"></span>
+                                      </label>
+                                    </div>
+                                  )}
+                                </>
+                              )}
+
+                              {editSubtaskMode === 'interval' && (
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', height: '26px' }}>
+                                  <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Repeat Every:</span>
+                                  <select
+                                    className="input-field"
+                                    style={{ padding: '2px 4px', fontSize: '11px', height: '100%', width: '90px', background: 'rgba(7, 10, 17, 0.95)' }}
+                                    value={editSubtaskInterval}
+                                    onChange={(e) => setEditSubtaskInterval(e.target.value)}
+                                  >
+                                    <option value="1">1 hour</option>
+                                    <option value="2">2 hours</option>
+                                    <option value="3">3 hours</option>
+                                    <option value="4">4 hours</option>
+                                    <option value="6">6 hours</option>
+                                    <option value="8">8 hours</option>
+                                    <option value="12">12 hours</option>
+                                  </select>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={st.id}
+                          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}
                         >
-                          <Trash2 size={11} className="hover:text-red-400 transition-colors" />
-                        </button>
-                      </div>
-                    ))}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
+                            <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              • {st.title}
+                            </span>
+                            {st.intervalHours && (
+                              <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
+                                🕒 Every {st.intervalHours}h
+                              </span>
+                            )}
+                            {!st.intervalHours && st.time && (
+                              <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
+                                🕒 {st.time} {st.remind10MinBefore ? '(10m before)' : '(exact)'}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <button
+                              onClick={() => handleStartEdit(st)}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', opacity: 0.7 }}
+                              title="Edit Subtask"
+                            >
+                              <Edit3 size={11} className="hover:text-blue-400 transition-colors" />
+                            </button>
+                            <button
+                              onClick={() => onDeleteSubtask(group.id, st.id)}
+                              style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+                              title="Delete Subtask"
+                            >
+                              <Trash2 size={11} className="hover:text-red-400 transition-colors" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
 
                     {/* Add Subtask Form */}
                     <form
@@ -524,7 +820,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                           <Plus size={11} />
                         </Button>
                       </div>
-
+                      
                       {/* Subtask Mode Toggle */}
                       <div style={{ display: 'flex', gap: '8px', fontSize: '9.5px', color: 'var(--text-dim)', alignItems: 'center' }}>
                         <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reminder:</span>

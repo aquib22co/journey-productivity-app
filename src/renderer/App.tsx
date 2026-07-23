@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Task, Settings, RecurringGroup, RecurringCompletions } from '../shared/types';
+import type { Task, Settings, RecurringGroup, RecurringCompletions, RecurringSubtask } from '../shared/types';
 import { TaskList } from './components/TaskList';
 import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -396,6 +396,27 @@ const App: React.FC = () => {
     handleSaveRecurringGroups(updated);
   };
 
+  const handleUpdateRecurringSubtask = (groupId: string, subtaskId: string, updatedFields: Partial<RecurringSubtask>) => {
+    const updated = recurringGroups.map(g => {
+      if (g.id === groupId) {
+        return {
+          ...g,
+          subtasks: g.subtasks.map(st => {
+            if (st.id === subtaskId) {
+              return {
+                ...st,
+                ...updatedFields
+              };
+            }
+            return st;
+          })
+        };
+      }
+      return g;
+    });
+    handleSaveRecurringGroups(updated);
+  };
+
   const handleDeleteTask = (id: string) => {
     const filtered = tasks.filter((t) => t.id !== id);
     handleSaveTasks(filtered);
@@ -717,6 +738,7 @@ const App: React.FC = () => {
                   onDeleteGroup={handleDeleteRecurringGroup}
                   onAddSubtask={handleAddRecurringSubtask}
                   onDeleteSubtask={handleDeleteRecurringSubtask}
+                  onUpdateSubtask={handleUpdateRecurringSubtask}
                 />
               </div>
 
