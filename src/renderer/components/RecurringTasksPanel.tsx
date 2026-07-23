@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Plus, 
-  Trash2, 
-  Settings2, 
-  Check, 
-  ChevronDown, 
-  ChevronRight, 
+import {
+  Plus,
+  Trash2,
+  Settings2,
+  Check,
+  ChevronDown,
+  ChevronRight,
   Sparkles,
   Calendar,
   AlertCircle
@@ -36,7 +36,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
 }) => {
   const [isManageMode, setIsManageMode] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-  
+
   // Subtask Form States
   const [newSubtaskNames, setNewSubtaskNames] = useState<Record<string, string>>({});
   const [subtaskMode, setSubtaskMode] = useState<Record<string, 'time' | 'interval'>>({});
@@ -45,7 +45,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
   const [newSubtaskAmpm, setNewSubtaskAmpm] = useState<Record<string, 'AM' | 'PM'>>({});
   const [newSubtaskRemindBefore, setNewSubtaskRemindBefore] = useState<Record<string, boolean>>({});
   const [newSubtaskInterval, setNewSubtaskInterval] = useState<Record<string, string>>({});
-  
+
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     // Expand all groups by default
     return {};
@@ -172,25 +172,25 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
   // Helper to determine check/uncheck status dynamically
   const isSubtaskCompleted = (subtask: any) => {
     const dateCompletions = completions[selectedDate] || [];
-    
+
     const events = dateCompletions.filter((evt: any) => {
       const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
       return evtId === subtask.id;
     });
-    
+
     if (events.length === 0) return false;
-    
+
     if (subtask.intervalHours) {
       const todayStr = (() => {
         const d = new Date();
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       })();
-      
+
       if (selectedDate === todayStr) {
         const lastEvent = events
           .map((evt: any) => typeof evt === 'string' ? { subtaskId: evt, timestamp: new Date(selectedDate + 'T12:00:00').toISOString() } : evt)
           .sort((a: any, b: any) => b.timestamp.localeCompare(a.timestamp))[0];
-          
+
         if (lastEvent) {
           const timeSince = Date.now() - new Date(lastEvent.timestamp).getTime();
           const intervalMs = subtask.intervalHours * 60 * 60 * 1000;
@@ -200,13 +200,13 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
         return true;
       }
     }
-    
+
     return true;
   };
 
   return (
     <div className="widget-card" style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
-      
+
       {/* Header */}
       <div className="widget-card-header" style={{ marginBottom: '4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -215,12 +215,12 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
             {isManageMode ? 'Manage Recurring' : 'Daily Habits'}
           </span>
         </div>
-        
+
         <Button
           variant="outline"
           size="sm"
           onClick={() => setIsManageMode(!isManageMode)}
-          style={{ 
+          style={{
             height: '28px',
             width: '28px',
             padding: 0,
@@ -261,9 +261,9 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                 const expanded = isGroupExpanded(group.id);
 
                 return (
-                  <div 
+                  <div
                     key={group.id}
-                    style={{ 
+                    style={{
                       background: 'rgba(255, 255, 255, 0.01)',
                       border: '1px solid rgba(255, 255, 255, 0.03)',
                       borderRadius: '8px',
@@ -275,11 +275,11 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                     }}
                   >
                     {/* Header Row: Title & Expand Toggle */}
-                    <div 
+                    <div
                       onClick={() => toggleExpand(group.id)}
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
                         justifyContent: 'space-between',
                         cursor: 'pointer',
                         userSelect: 'none'
@@ -299,14 +299,14 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                     {/* Progress Bar */}
                     {totalSubtasks > 0 && (
                       <div style={{ width: '100%', height: '5px', background: 'rgba(255, 255, 255, 0.04)', borderRadius: '3px', overflow: 'hidden' }}>
-                        <div 
-                          style={{ 
-                            width: `${percent}%`, 
-                            height: '100%', 
+                        <div
+                          style={{
+                            width: `${percent}%`,
+                            height: '100%',
                             background: percent === 100 ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #0084ff, #00c6ff)',
                             borderRadius: '3px',
                             transition: 'width 0.3s ease-in-out'
-                          }} 
+                          }}
                         />
                       </div>
                     )}
@@ -322,26 +322,26 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                           group.subtasks.map(subtask => {
                             const isCompleted = isSubtaskCompleted(subtask);
                             return (
-                              <div 
-                                key={subtask.id} 
+                              <div
+                                key={subtask.id}
                                 style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 0' }}
                               >
-                                <div 
+                                <div
                                   className="task-checkbox-container"
                                   onClick={() => onToggleSubtask(group.id, subtask.id, selectedDate)}
                                 >
-                                  <input 
+                                  <input
                                     type="checkbox"
                                     className="task-checkbox"
                                     checked={isCompleted}
-                                    onChange={() => {}} // handled via container click
+                                    onChange={() => { }} // handled via container click
                                     style={{ width: '18px', height: '18px' }}
                                   />
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1, minWidth: 0, gap: '4px' }}>
-                                  <span 
-                                    style={{ 
-                                      fontSize: '12.5px', 
+                                  <span
+                                    style={{
+                                      fontSize: '12.5px',
                                       color: isCompleted ? 'var(--text-muted)' : 'var(--text-main)',
                                       textDecoration: isCompleted ? 'line-through' : 'none',
                                       transition: 'color 0.2s ease, text-decoration 0.2s ease',
@@ -352,14 +352,14 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                                   >
                                     {subtask.title}
                                   </span>
-                                  
+
                                   {subtask.intervalHours && (
-                                    <span 
-                                      style={{ 
-                                        fontSize: '9.5px', 
-                                        color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--text-dim)', 
+                                    <span
+                                      style={{
+                                        fontSize: '9.5px',
+                                        color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--text-dim)',
                                         display: 'inline-flex',
-                                        alignItems: 'center', 
+                                        alignItems: 'center',
                                         gap: '2px',
                                         background: 'rgba(255, 255, 255, 0.02)',
                                         padding: '1px 5px',
@@ -373,12 +373,12 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                                   )}
 
                                   {!subtask.intervalHours && subtask.time && (
-                                    <span 
-                                      style={{ 
-                                        fontSize: '9.5px', 
-                                        color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--text-dim)', 
+                                    <span
+                                      style={{
+                                        fontSize: '9.5px',
+                                        color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--text-dim)',
                                         display: 'inline-flex',
-                                        alignItems: 'center', 
+                                        alignItems: 'center',
                                         gap: '2px',
                                         background: 'rgba(255, 255, 255, 0.02)',
                                         padding: '1px 5px',
@@ -408,10 +408,10 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
       ) : (
         /* Manage Mode View */
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: '14px' }} className="no-drag">
-          
+
           {/* Add Group Form */}
           <form onSubmit={handleCreateGroup} style={{ display: 'flex', gap: '8px' }}>
-            <input 
+            <input
               type="text"
               placeholder="New group (e.g. Workout)..."
               value={newGroupName}
@@ -419,8 +419,8 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
               className="input-field"
               style={{ padding: '6px 10px', fontSize: '12.5px', height: '32px' }}
             />
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               size="sm"
               style={{ background: 'var(--accent-color)', height: '32px', padding: '0 12px' }}
             >
@@ -429,23 +429,22 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
           </form>
 
           {/* Manage Scrollable List */}
-          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '2px' }}>
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0px', paddingRight: '2px' }}>
             {groups.length === 0 ? (
               <span style={{ fontSize: '11px', color: 'var(--text-dim)', textAlign: 'center', marginTop: '20px' }}>
                 Create a group above to start configuring!
               </span>
             ) : (
-              groups.map(group => (
-                <div 
+              groups.map((group, index) => (
+                <div
                   key={group.id}
-                  style={{ 
-                    background: 'rgba(255, 255, 255, 0.015)',
-                    border: '1px solid rgba(255, 255, 255, 0.04)',
-                    borderRadius: '8px',
-                    padding: '10px 12px',
+                  style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '8px'
+                    gap: '8px',
+                    paddingBottom: '16px',
+                    borderBottom: index === groups.length - 1 ? 'none' : '1px solid rgba(255, 255, 255, 0.08)',
+                    marginBottom: index === groups.length - 1 ? '0px' : '16px'
                   }}
                 >
                   {/* Group Title Row with Delete Group Button */}
@@ -453,7 +452,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                     <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', flex: 1 }}>
                       {group.title}
                     </span>
-                    <button 
+                    <button
                       onClick={() => onDeleteGroup(group.id)}
                       style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', opacity: 0.7 }}
                       title="Delete Group"
@@ -465,8 +464,8 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                   {/* Subtask Manager List */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '1px solid rgba(255, 255, 255, 0.02)', paddingTop: '6px' }}>
                     {group.subtasks.map(st => (
-                      <div 
-                        key={st.id} 
+                      <div
+                        key={st.id}
                         style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
@@ -484,7 +483,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                             </span>
                           )}
                         </div>
-                        <button 
+                        <button
                           onClick={() => onDeleteSubtask(group.id, st.id)}
                           style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer', paddingLeft: '4px' }}
                           title="Delete Subtask"
@@ -495,21 +494,21 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                     ))}
 
                     {/* Add Subtask Form */}
-                    <form 
+                    <form
                       onSubmit={(e) => handleAddSubtaskSubmit(group.id, e)}
-                      style={{ 
-                        display: 'flex', 
-                        flexDirection: 'column', 
-                        gap: '8px', 
-                        marginTop: '8px', 
-                        padding: '8px', 
-                        background: 'rgba(255,255,255,0.01)', 
-                        border: '1px dashed rgba(255,255,255,0.05)', 
-                        borderRadius: '6px' 
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
+                        marginTop: '8px',
+                        padding: '8px',
+                        background: 'rgba(255,255,255,0.01)',
+                        border: '1px dashed rgba(255,255,255,0.05)',
+                        borderRadius: '6px'
                       }}
                     >
                       <div style={{ display: 'flex', gap: '6px' }}>
-                        <input 
+                        <input
                           type="text"
                           placeholder="Subtask name..."
                           value={newSubtaskNames[group.id] || ''}
@@ -517,20 +516,20 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                           className="input-field"
                           style={{ padding: '4px 8px', fontSize: '11.5px', height: '26px', background: 'rgba(0,0,0,0.15)', flex: 1 }}
                         />
-                        <Button 
-                          type="submit" 
+                        <Button
+                          type="submit"
                           size="sm"
                           style={{ background: 'var(--accent-color)', height: '26px', width: '26px', padding: 0 }}
                         >
                           <Plus size={11} />
                         </Button>
                       </div>
-                      
+
                       {/* Subtask Mode Toggle */}
                       <div style={{ display: 'flex', gap: '8px', fontSize: '9.5px', color: 'var(--text-dim)', alignItems: 'center' }}>
                         <span style={{ fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reminder:</span>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => handleSubtaskModeChange(group.id, 'time')}
                           style={{
                             background: (subtaskMode[group.id] || 'time') === 'time' ? 'rgba(255,255,255,0.05)' : 'transparent',
@@ -543,8 +542,8 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                         >
                           Specific Time
                         </button>
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           onClick={() => handleSubtaskModeChange(group.id, 'interval')}
                           style={{
                             background: (subtaskMode[group.id] || 'time') === 'interval' ? 'rgba(255,255,255,0.05)' : 'transparent',
@@ -588,11 +587,11 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                                 onBlur={() => handleSubtaskMinBlur(group.id)}
                                 disabled={!newSubtaskHour[group.id]}
                               />
-                              <div style={{ 
-                                display: 'flex', 
-                                borderRadius: '4px', 
-                                overflow: 'hidden', 
-                                border: '1px solid rgba(255, 255, 255, 0.08)', 
+                              <div style={{
+                                display: 'flex',
+                                borderRadius: '4px',
+                                overflow: 'hidden',
+                                border: '1px solid rgba(255, 255, 255, 0.08)',
                                 background: 'rgba(255, 255, 255, 0.02)',
                                 height: '100%',
                                 opacity: newSubtaskHour[group.id] ? 1 : 0.5,
@@ -640,10 +639,10 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
                               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Remind 10m before:</span>
                                 <label className="switch" style={{ width: '32px', height: '18px' }}>
-                                  <input 
-                                    type="checkbox" 
-                                    checked={newSubtaskRemindBefore[group.id] !== false} 
-                                    onChange={() => handleSubtaskRemindToggle(group.id)} 
+                                  <input
+                                    type="checkbox"
+                                    checked={newSubtaskRemindBefore[group.id] !== false}
+                                    onChange={() => handleSubtaskRemindToggle(group.id)}
                                   />
                                   <span className="slider"></span>
                                 </label>
