@@ -22,6 +22,29 @@ export interface Settings {
   enableNotifications: boolean;
 }
 
+export interface RecurringSubtask {
+  id: string;
+  title: string;
+  time?: string;
+  remind10MinBefore?: boolean;
+  intervalHours?: number;
+}
+
+export interface RecurringGroup {
+  id: string;
+  title: string;
+  subtasks: RecurringSubtask[];
+}
+
+export interface RecurringCompletionEvent {
+  subtaskId: string;
+  timestamp: string;
+}
+
+export interface RecurringCompletions {
+  [dateStr: string]: (string | RecurringCompletionEvent)[];
+}
+
 export interface AppData {
   tasks: Task[];
   settings: Settings;
@@ -40,6 +63,10 @@ export interface ElectronAPI {
   dragWindow: (dx: number, dy: number) => void;
   restoreMainWindow: () => Promise<void>;
   onHighlightTask: (callback: (taskId: string) => void) => () => void;
+  getRecurringGroups: () => Promise<RecurringGroup[]>;
+  saveRecurringGroups: (groups: RecurringGroup[]) => Promise<boolean>;
+  getRecurringCompletions: () => Promise<RecurringCompletions>;
+  saveRecurringCompletions: (completions: RecurringCompletions) => Promise<boolean>;
 }
 
 declare global {
@@ -47,3 +74,4 @@ declare global {
     electronAPI: ElectronAPI;
   }
 }
+

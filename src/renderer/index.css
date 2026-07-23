@@ -152,7 +152,7 @@ textarea {
 /* Horizontal Side-by-Side Dashboard Layout */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 280px 1.2fr 1fr;
   gap: 16px;
   flex: 1;
   min-height: 0;

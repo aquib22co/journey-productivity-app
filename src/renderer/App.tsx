@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import type { Task, Settings } from '../shared/types';
+import type { Task, Settings, RecurringGroup, RecurringCompletions } from '../shared/types';
 import { TaskList } from './components/TaskList';
 import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
 import { CompletedTasksPanel, getLocalDateString, getSevenDaysAgoString } from './components/CompletedTasksPanel';
+import { RecurringTasksPanel } from './components/RecurringTasksPanel';
 import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -113,6 +114,8 @@ const BadgeWindow: React.FC = () => {
 
 const App: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [recurringGroups, setRecurringGroups] = useState<RecurringGroup[]>([]);
+  const [recurringCompletions, setRecurringCompletions] = useState<RecurringCompletions>({});
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,15 +132,23 @@ const App: React.FC = () => {
         if (window.electronAPI) {
           const loadedTasks = await window.electronAPI.getTasks();
           const loadedSettings = await window.electronAPI.getSettings();
+          const loadedGroups = await window.electronAPI.getRecurringGroups();
+          const loadedCompletions = await window.electronAPI.getRecurringCompletions();
 
           setTasks(loadedTasks || []);
           setSettings(loadedSettings || DEFAULT_SETTINGS);
+          setRecurringGroups(loadedGroups || []);
+          setRecurringCompletions(loadedCompletions || {});
         } else {
           // Fallback for standard browser preview
           const localTasks = localStorage.getItem('journey_tasks');
           const localSettings = localStorage.getItem('journey_settings');
+          const localGroups = localStorage.getItem('journey_recurring_groups');
+          const localCompletions = localStorage.getItem('journey_recurring_completions');
           if (localTasks) setTasks(JSON.parse(localTasks));
           if (localSettings) setSettings(JSON.parse(localSettings));
+          if (localGroups) setRecurringGroups(JSON.parse(localGroups));
+          if (localCompletions) setRecurringCompletions(JSON.parse(localCompletions));
         }
       } catch (err) {
         console.error('Error loading initial data:', err);
@@ -160,6 +171,32 @@ const App: React.FC = () => {
       }
     } catch (err) {
       console.error('Failed to save tasks:', err);
+    }
+  };
+
+  const handleSaveRecurringGroups = async (newGroups: RecurringGroup[]) => {
+    setRecurringGroups(newGroups);
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.saveRecurringGroups(newGroups);
+      } else {
+        localStorage.setItem('journey_recurring_groups', JSON.stringify(newGroups));
+      }
+    } catch (err) {
+      console.error('Failed to save recurring groups:', err);
+    }
+  };
+
+  const handleSaveRecurringCompletions = async (newCompletions: RecurringCompletions) => {
+    setRecurringCompletions(newCompletions);
+    try {
+      if (window.electronAPI) {
+        await window.electronAPI.saveRecurringCompletions(newCompletions);
+      } else {
+        localStorage.setItem('journey_recurring_completions', JSON.stringify(newCompletions));
+      }
+    } catch (err) {
+      console.error('Failed to save recurring completions:', err);
     }
   };
 
@@ -198,8 +235,165 @@ const App: React.FC = () => {
   };
 
   const handleUpdateTask = (updatedTask: Task) => {
+    if (updatedTask.id.startsWith('recurring-completed|')) {
+      const parts = updatedTask.id.split('|');
+      if (parts.length === 4 && parts[0] === 'recurring-completed') {
+        const subtaskId = parts[1];
+        const timestamp = parts[2];
+        const dateKey = parts[3];
+        const currentCompletionsForDate = recurringCompletions[dateKey] || [];
+        const newCompletionsForDate = currentCompletionsForDate.filter(evt => {
+          const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+          const evtTime = typeof evt === 'string' ? '' : evt.timestamp;
+          if (evtId === subtaskId) {
+            if (evtTime === timestamp || evtTime === '') return false;
+          }
+          return true;
+        });
+        const newCompletions = {
+          ...recurringCompletions,
+          [dateKey]: newCompletionsForDate
+        };
+        handleSaveRecurringCompletions(newCompletions);
+      }
+      return;
+    }
+    if (updatedTask.id.startsWith('recurring-completed:')) {
+      const parts = updatedTask.id.split(':');
+      if (parts.length === 3 && parts[0] === 'recurring-completed') {
+        const subtaskId = parts[1];
+        const dateKey = parts[2];
+        const currentCompletionsForDate = recurringCompletions[dateKey] || [];
+        const newCompletionsForDate = currentCompletionsForDate.filter(evt => {
+          const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+          return evtId !== subtaskId;
+        });
+        const newCompletions = {
+          ...recurringCompletions,
+          [dateKey]: newCompletionsForDate
+        };
+        handleSaveRecurringCompletions(newCompletions);
+      }
+      return;
+    }
     const updated = tasks.map((t) => (t.id === updatedTask.id ? updatedTask : t));
     handleSaveTasks(updated);
+  };
+
+  const handleToggleSubtask = (groupId: string, subtaskId: string, date: string) => {
+    let isInterval = false;
+    for (const group of recurringGroups) {
+      const st = group.subtasks.find(s => s.id === subtaskId);
+      if (st && st.intervalHours) {
+        isInterval = true;
+        break;
+      }
+    }
+
+    const currentCompletionsForDate = recurringCompletions[date] || [];
+    let newCompletionsForDate: any[];
+
+    if (isInterval) {
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const subtask = recurringGroups.flatMap(g => g.subtasks).find(st => st.id === subtaskId);
+      const intervalMs = (subtask?.intervalHours || 2) * 60 * 60 * 1000;
+      
+      const completionsOfSubtask = currentCompletionsForDate.filter(evt => {
+        const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+        return evtId === subtaskId;
+      });
+
+      const lastEvent = completionsOfSubtask
+        .map(evt => typeof evt === 'string' ? { subtaskId: evt, timestamp: new Date(date + 'T12:00:00').toISOString() } : evt)
+        .sort((a,b) => b.timestamp.localeCompare(a.timestamp))[0];
+
+      let isCurrentlyCompleted = false;
+      if (lastEvent) {
+        const timeSince = Date.now() - new Date(lastEvent.timestamp).getTime();
+        isCurrentlyCompleted = timeSince < intervalMs;
+      }
+
+      if (isCurrentlyCompleted && lastEvent) {
+        newCompletionsForDate = currentCompletionsForDate.filter(evt => evt !== lastEvent);
+      } else {
+        let completionTime = new Date();
+        if (date !== todayKey) {
+          const parts = date.split('-');
+          completionTime = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+        }
+        newCompletionsForDate = [
+          ...currentCompletionsForDate,
+          { subtaskId, timestamp: completionTime.toISOString() }
+        ];
+      }
+    } else {
+      const exists = currentCompletionsForDate.some(evt => {
+        const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+        return evtId === subtaskId;
+      });
+
+      if (exists) {
+        newCompletionsForDate = currentCompletionsForDate.filter(evt => {
+          const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+          return evtId !== subtaskId;
+        });
+      } else {
+        let completionTime = new Date();
+        const parts = date.split('-');
+        completionTime = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+        newCompletionsForDate = [
+          ...currentCompletionsForDate,
+          { subtaskId, timestamp: completionTime.toISOString() }
+        ];
+      }
+    }
+
+    const newCompletions = {
+      ...recurringCompletions,
+      [date]: newCompletionsForDate
+    };
+    handleSaveRecurringCompletions(newCompletions);
+  };
+
+  const handleAddRecurringGroup = (title: string) => {
+    const newGroup: RecurringGroup = {
+      id: crypto.randomUUID(),
+      title,
+      subtasks: []
+    };
+    handleSaveRecurringGroups([...recurringGroups, newGroup]);
+  };
+
+  const handleDeleteRecurringGroup = (groupId: string) => {
+    const filtered = recurringGroups.filter(g => g.id !== groupId);
+    handleSaveRecurringGroups(filtered);
+  };
+
+  const handleAddRecurringSubtask = (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => {
+    const updated = recurringGroups.map(g => {
+      if (g.id === groupId) {
+        return {
+          ...g,
+          subtasks: [...g.subtasks, { id: crypto.randomUUID(), title, time, remind10MinBefore, intervalHours }]
+        };
+      }
+      return g;
+    });
+    handleSaveRecurringGroups(updated);
+  };
+
+  const handleDeleteRecurringSubtask = (groupId: string, subtaskId: string) => {
+    const updated = recurringGroups.map(g => {
+      if (g.id === groupId) {
+        return {
+          ...g,
+          subtasks: g.subtasks.filter(st => st.id !== subtaskId)
+        };
+      }
+      return g;
+    });
+    handleSaveRecurringGroups(updated);
   };
 
   const handleDeleteTask = (id: string) => {
@@ -249,14 +443,14 @@ const App: React.FC = () => {
   };
 
   // Streaks calculation inside App.tsx
-  const calculateStreaks = () => {
+  const calculateStreaks = (taskList: Task[]) => {
     let currentStreak = 0;
     let maxStreak = 0;
     let tempStreak = 0;
     let totalCompleted = 0;
 
     const completedDates = new Set(
-      tasks
+      taskList
         .filter(t => t.completedAt)
         .map(t => {
           const d = new Date(t.completedAt!);
@@ -264,7 +458,7 @@ const App: React.FC = () => {
         })
     );
 
-    totalCompleted = tasks.filter(t => t.completedAt).length;
+    totalCompleted = taskList.filter(t => t.completedAt).length;
 
     const today = new Date();
     const checkDate = new Date(today);
@@ -318,7 +512,56 @@ const App: React.FC = () => {
     return { currentStreak, maxStreak, totalCompleted };
   };
 
-  const { currentStreak, maxStreak, totalCompleted } = calculateStreaks();
+  const getVirtualTasks = (): Task[] => {
+    const virtualTasks: Task[] = [];
+    Object.entries(recurringCompletions).forEach(([dateKey, events]) => {
+      if (!Array.isArray(events)) return;
+      events.forEach((evt) => {
+        const subtaskId = typeof evt === 'string' ? evt : evt.subtaskId;
+        const timestamp = typeof evt === 'string' 
+          ? new Date(dateKey + 'T12:00:00').toISOString() 
+          : evt.timestamp;
+
+        let groupTitle = '';
+        let subtaskTitle = '';
+        let subtaskTime = undefined;
+        let intervalHours = undefined;
+        for (const group of recurringGroups) {
+          const st = group.subtasks.find(s => s.id === subtaskId);
+          if (st) {
+            groupTitle = group.title;
+            subtaskTitle = st.title;
+            subtaskTime = st.time;
+            intervalHours = st.intervalHours;
+            break;
+          }
+        }
+        
+        if (subtaskTitle) {
+          const timeDisplay = intervalHours 
+            ? new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+            : subtaskTime;
+            
+          virtualTasks.push({
+            id: `recurring-completed|${subtaskId}|${timestamp}|${dateKey}`,
+            title: intervalHours 
+              ? `${groupTitle}: ${subtaskTitle} (every ${intervalHours}h)`
+              : `${groupTitle}: ${subtaskTitle}`,
+            createdAt: timestamp,
+            completedAt: timestamp,
+            category: 'general',
+            time: timeDisplay
+          });
+        }
+      });
+    });
+    return virtualTasks;
+  };
+
+  const virtualTasks = getVirtualTasks();
+  const allTasks = [...tasks, ...virtualTasks];
+
+  const { currentStreak, maxStreak, totalCompleted } = calculateStreaks(allTasks);
 
   const urlParams = new URLSearchParams(window.location.search);
   const isBadgeMode = urlParams.get('mode') === 'badge';
@@ -463,11 +706,25 @@ const App: React.FC = () => {
           ) : (
             /* Side-by-Side Horizontal Grid Layout */
             <div className="dashboard-grid">
-              {/* Left Column: Heatmap & CompletedTasksPanel */}
+              {/* Leftmost Column: Recurring Tasks Panel */}
+              <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
+                <RecurringTasksPanel
+                  groups={recurringGroups}
+                  completions={recurringCompletions}
+                  selectedDate={historyStartDate === historyEndDate ? historyStartDate : getLocalDateString(new Date())}
+                  onToggleSubtask={handleToggleSubtask}
+                  onAddGroup={handleAddRecurringGroup}
+                  onDeleteGroup={handleDeleteRecurringGroup}
+                  onAddSubtask={handleAddRecurringSubtask}
+                  onDeleteSubtask={handleDeleteRecurringSubtask}
+                />
+              </div>
+
+              {/* Middle Column: Heatmap & CompletedTasksPanel */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minHeight: 0, minWidth: 0 }}>
-                <Heatmap tasks={tasks} settings={settings} onCellClick={handleHeatmapCellClick} />
+                <Heatmap tasks={allTasks} settings={settings} onCellClick={handleHeatmapCellClick} />
                 <CompletedTasksPanel
-                  tasks={tasks}
+                  tasks={allTasks}
                   onUpdateTask={handleUpdateTask}
                   startDate={historyStartDate}
                   endDate={historyEndDate}

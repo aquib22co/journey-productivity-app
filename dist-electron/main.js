@@ -15,8 +15,23 @@ function readData() {
 		if (fs.existsSync(dataFilePath)) {
 			const content = fs.readFileSync(dataFilePath, "utf-8");
 			const parsed = JSON.parse(content);
+			const completions = {};
+			if (parsed.recurringCompletions && typeof parsed.recurringCompletions === "object") Object.entries(parsed.recurringCompletions).forEach(([dateStr, items]) => {
+				if (Array.isArray(items)) completions[dateStr] = items.map((item) => {
+					if (typeof item === "string") {
+						const parts = dateStr.split("-");
+						return {
+							subtaskId: item,
+							timestamp: new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0).toISOString()
+						};
+					}
+					return item;
+				});
+			});
 			return {
 				tasks: Array.isArray(parsed.tasks) ? parsed.tasks : [],
+				recurringGroups: Array.isArray(parsed.recurringGroups) ? parsed.recurringGroups : [],
+				recurringCompletions: completions,
 				settings: {
 					alwaysOnTop: true,
 					opacity: .95,
@@ -38,6 +53,8 @@ function readData() {
 	}
 	return {
 		tasks: [],
+		recurringGroups: [],
+		recurringCompletions: {},
 		settings: {
 			alwaysOnTop: true,
 			opacity: .95,
@@ -256,7 +273,7 @@ else {
 		let hours = 0;
 		let minutes = 0;
 		if (task.time) {
-			const timeMatch = task.time.match(/^(\d{2}):(\d{2})\s*(AM|PM)$/i);
+			const timeMatch = task.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
 			if (timeMatch) {
 				hours = parseInt(timeMatch[1], 10);
 				minutes = parseInt(timeMatch[2], 10);
@@ -267,8 +284,20 @@ else {
 		}
 		return new Date(year, month - 1, day, hours, minutes, 0, 0);
 	}
+	function getRecurringSubtaskDueTime(timeStr, remind10MinBefore, date) {
+		const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+		if (!timeMatch) return null;
+		let hours = parseInt(timeMatch[1], 10);
+		let minutes = parseInt(timeMatch[2], 10);
+		const ampm = timeMatch[3].toUpperCase();
+		if (ampm === "PM" && hours < 12) hours += 12;
+		else if (ampm === "AM" && hours === 12) hours = 0;
+		const target = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
+		if (remind10MinBefore) target.setMinutes(target.getMinutes() - 10);
+		return target;
+	}
 	function checkDueTasks() {
-		const { tasks, settings } = readData();
+		const { tasks, recurringGroups, recurringCompletions, settings } = readData();
 		if (!settings.enableNotifications) return;
 		const now = /* @__PURE__ */ new Date();
 		tasks.forEach((task) => {
@@ -293,10 +322,68 @@ else {
 				}
 			}
 		});
+		const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+		const completionsToday = recurringCompletions?.[todayKey] || [];
+		const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+		if (Array.isArray(recurringGroups)) recurringGroups.forEach((group) => {
+			if (Array.isArray(group.subtasks)) group.subtasks.forEach((subtask) => {
+				if (subtask.intervalHours) {
+					const lastEvent = completionsToday.filter((evt) => {
+						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
+					}).map((evt) => typeof evt === "string" ? {
+						subtaskId: evt,
+						timestamp: startOfDay.toISOString()
+					} : evt).sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0];
+					const lastTime = lastEvent ? new Date(lastEvent.timestamp) : startOfDay;
+					if (new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1e3) <= now) {
+						const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
+						if (!notifiedKeys.has(key)) {
+							notifiedKeys.add(key);
+							if (Notification.isSupported()) {
+								const notification = new Notification({
+									title: `${group.title}: ${subtask.title}`,
+									body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`
+								});
+								notification.on("click", () => {
+									toggleMainWindow();
+								});
+								notification.show();
+							}
+						}
+					}
+				} else if (subtask.time) {
+					if (completionsToday.some((evt) => {
+						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
+					})) return;
+					const notifyTime = getRecurringSubtaskDueTime(subtask.time, !!subtask.remind10MinBefore, now);
+					if (!notifyTime) return;
+					if (notifyTime <= now) {
+						const key = `recurring:${subtask.id}:${todayKey}`;
+						if (!notifiedKeys.has(key)) {
+							notifiedKeys.add(key);
+							if (Notification.isSupported()) {
+								const bodyText = subtask.remind10MinBefore ? `10 min left for your habit: ${subtask.title}` : `Time for your habit: ${subtask.title}`;
+								const notification = new Notification({
+									title: `${group.title}: ${subtask.title}`,
+									body: bodyText
+								});
+								notification.on("click", () => {
+									toggleMainWindow();
+								});
+								notification.show();
+							}
+						}
+					}
+				}
+			});
+		});
 	}
 	function startDueTaskScheduler() {
-		const { tasks } = readData();
+		const { tasks, recurringGroups, recurringCompletions } = readData();
 		const now = /* @__PURE__ */ new Date();
+		const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+		const completionsToday = recurringCompletions?.[todayKey] || [];
+		const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
 		tasks.forEach((task) => {
 			if (!task.completedAt) {
 				const dueTime = getTaskDueTime(task);
@@ -305,6 +392,33 @@ else {
 					notifiedKeys.add(key);
 				}
 			}
+		});
+		if (Array.isArray(recurringGroups)) recurringGroups.forEach((group) => {
+			if (Array.isArray(group.subtasks)) group.subtasks.forEach((subtask) => {
+				if (subtask.intervalHours) {
+					const lastEvent = completionsToday.filter((evt) => {
+						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
+					}).map((evt) => typeof evt === "string" ? {
+						subtaskId: evt,
+						timestamp: startOfDay.toISOString()
+					} : evt).sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0];
+					const lastTime = lastEvent ? new Date(lastEvent.timestamp) : startOfDay;
+					if (new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1e3) <= now) {
+						const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
+						notifiedKeys.add(key);
+					}
+				} else if (subtask.time) {
+					if (!completionsToday.some((evt) => {
+						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
+					})) {
+						const notifyTime = getRecurringSubtaskDueTime(subtask.time, !!subtask.remind10MinBefore, now);
+						if (notifyTime && notifyTime <= now) {
+							const key = `recurring:${subtask.id}:${todayKey}`;
+							notifiedKeys.add(key);
+						}
+					}
+				}
+			});
 		});
 		checkDueTasks();
 		setInterval(checkDueTasks, 6e4);
@@ -333,6 +447,22 @@ ipcMain.handle("get-tasks", () => {
 ipcMain.handle("save-tasks", (_event, tasks) => {
 	const data = readData();
 	data.tasks = tasks;
+	return writeData(data);
+});
+ipcMain.handle("get-recurring-groups", () => {
+	return readData().recurringGroups;
+});
+ipcMain.handle("save-recurring-groups", (_event, groups) => {
+	const data = readData();
+	data.recurringGroups = groups;
+	return writeData(data);
+});
+ipcMain.handle("get-recurring-completions", () => {
+	return readData().recurringCompletions;
+});
+ipcMain.handle("save-recurring-completions", (_event, completions) => {
+	const data = readData();
+	data.recurringCompletions = completions;
 	return writeData(data);
 });
 ipcMain.handle("get-settings", () => {

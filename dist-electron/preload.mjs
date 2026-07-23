@@ -21,6 +21,10 @@ electron.contextBridge.exposeInMainWorld("electronAPI", {
 		return () => {
 			electron.ipcRenderer.removeListener("highlight-task", subscription);
 		};
-	}
+	},
+	getRecurringGroups: () => electron.ipcRenderer.invoke("get-recurring-groups"),
+	saveRecurringGroups: (groups) => electron.ipcRenderer.invoke("save-recurring-groups", groups),
+	getRecurringCompletions: () => electron.ipcRenderer.invoke("get-recurring-completions"),
+	saveRecurringCompletions: (completions) => electron.ipcRenderer.invoke("save-recurring-completions", completions)
 });
 //#endregion
