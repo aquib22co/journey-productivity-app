@@ -280,6 +280,21 @@ const App: React.FC = () => {
     handleSaveTasks(updated);
   };
 
+  const getRecurringScheduledDate = (timeStr: string, dateStr: string): Date | null => {
+    const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!timeMatch) return null;
+    const [year, month, day] = dateStr.split('-').map(Number);
+    let hours = parseInt(timeMatch[1], 10);
+    let minutes = parseInt(timeMatch[2], 10);
+    const ampm = timeMatch[3].toUpperCase();
+    if (ampm === 'PM' && hours < 12) {
+      hours += 12;
+    } else if (ampm === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  };
+
   const handleToggleSubtask = (groupId: string, subtaskId: string, date: string) => {
     let isInterval = false;
     for (const group of recurringGroups) {
@@ -339,9 +354,36 @@ const App: React.FC = () => {
           return evtId !== subtaskId;
         });
       } else {
+        const subtask = recurringGroups.flatMap(g => g.subtasks).find(st => st.id === subtaskId);
         let completionTime = new Date();
-        const parts = date.split('-');
-        completionTime = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+        const todayKey = `${completionTime.getFullYear()}-${String(completionTime.getMonth() + 1).padStart(2, '0')}-${String(completionTime.getDate()).padStart(2, '0')}`;
+        
+        if (date !== todayKey) {
+          let pastTimeSet = false;
+          if (subtask && subtask.time) {
+            const schedDate = getRecurringScheduledDate(subtask.time, date);
+            if (schedDate) {
+              completionTime = schedDate;
+              pastTimeSet = true;
+            }
+          }
+          if (!pastTimeSet) {
+            const parts = date.split('-');
+            completionTime = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]), 12, 0, 0);
+          }
+        } else {
+          if (subtask && subtask.time) {
+            const schedDate = getRecurringScheduledDate(subtask.time, date);
+            if (schedDate) {
+              if (completionTime >= schedDate) {
+                // Completed at or after scheduled time: log scheduled time
+                completionTime = schedDate;
+              }
+              // If completed early, keep current completionTime
+            }
+          }
+        }
+
         newCompletionsForDate = [
           ...currentCompletionsForDate,
           { subtaskId, timestamp: completionTime.toISOString() }
@@ -559,9 +601,7 @@ const App: React.FC = () => {
         }
         
         if (subtaskTitle) {
-          const timeDisplay = intervalHours 
-            ? new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-            : subtaskTime;
+          const timeDisplay = new Date(timestamp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
             
           virtualTasks.push({
             id: `recurring-completed|${subtaskId}|${timestamp}|${dateKey}`,
