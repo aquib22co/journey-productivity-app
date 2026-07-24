@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Check, 
-  Settings2, 
+  Plus, 
   Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { RecurringGroup, RecurringCompletions, RecurringSubtask, RecurringCompletionEvent } from '../../shared/types';
 import { ChecklistView } from './recurring/ChecklistView';
-import { ManageModeView } from './recurring/ManageModeView';
 
 interface RecurringTasksPanelProps {
   groups: RecurringGroup[];
@@ -36,7 +34,8 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
   onResetIntervalSubtask,
   onUpdateGroup,
 }) => {
-  const [isManageMode, setIsManageMode] = useState(false);
+  const [isAddingGroup, setIsAddingGroup] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -177,6 +176,14 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
     return events.length > 0;
   };
 
+  const handleCreateGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroupName.trim()) return;
+    onAddGroup(newGroupName.trim());
+    setNewGroupName('');
+    setIsAddingGroup(false);
+  };
+
   return (
     <div className="widget-card" style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column' }}>
       
@@ -184,51 +191,87 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
       <div className="widget-card-header" style={{ marginBottom: '4px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Sparkles size={18} style={{ color: 'var(--accent-color)' }} />
-          <span className="widget-card-title">
-            {isManageMode ? 'Manage Recurring' : 'Daily Habits'}
-          </span>
+          <span className="widget-card-title">Daily Habits</span>
         </div>
         
         <Button
           variant="outline"
           size="sm"
-          onClick={() => setIsManageMode(!isManageMode)}
+          onClick={() => setIsAddingGroup(!isAddingGroup)}
           style={{ 
             height: '28px',
-            width: '28px',
-            padding: 0,
-            background: isManageMode ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-            borderColor: isManageMode ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.05)',
-            color: isManageMode ? 'var(--success-color)' : 'var(--text-muted)'
+            padding: '0 8px',
+            background: isAddingGroup ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
+            borderColor: isAddingGroup ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.05)',
+            color: isAddingGroup ? 'var(--success-color)' : 'var(--text-muted)',
+            fontSize: '11px',
+            fontWeight: 600,
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px'
           }}
-          title={isManageMode ? 'Back to checklist' : 'Configure recurring groups'}
+          title="Add a new habit group"
         >
-          {isManageMode ? <Check size={14} /> : <Settings2 size={14} />}
+          <Plus size={12} />
+          <span>Group</span>
         </Button>
       </div>
 
-      {/* Conditional View Rendering */}
-      {!isManageMode ? (
-        <ChecklistView
-          groups={groups}
-          selectedDate={selectedDate}
-          getLocalDateDisplay={getLocalDateDisplay}
-          isSubtaskCompleted={isSubtaskCompleted}
-          onToggleSubtask={onToggleSubtask}
-          onToggleIntervalSubtaskEnabled={handleToggleIntervalSubtaskEnabled}
-          formatCountdown={formatCountdown}
-        />
-      ) : (
-        <ManageModeView
-          groups={groups}
-          onAddGroup={onAddGroup}
-          onDeleteGroup={onDeleteGroup}
-          onUpdateGroup={onUpdateGroup}
-          onAddSubtask={onAddSubtask}
-          onDeleteSubtask={onDeleteSubtask}
-          onUpdateSubtask={onUpdateSubtask}
-        />
+      {/* Add Group Form */}
+      {isAddingGroup && (
+        <form 
+          onSubmit={handleCreateGroup} 
+          style={{ 
+            display: 'flex', 
+            gap: '8px', 
+            marginBottom: '12px', 
+            padding: '0 2px'
+          }}
+          className="no-drag"
+        >
+          <input
+            type="text"
+            placeholder="New group (e.g. Workout)..."
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            className="input-field"
+            style={{ padding: '6px 10px', fontSize: '12.5px', height: '32px', flex: 1 }}
+            autoFocus
+          />
+          <Button
+            type="submit"
+            size="sm"
+            style={{ background: 'var(--accent-color)', height: '32px', padding: '0 12px' }}
+          >
+            Add
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsAddingGroup(false)}
+            style={{ height: '32px', padding: '0 8px', color: 'var(--text-muted)' }}
+          >
+            Cancel
+          </Button>
+        </form>
       )}
+
+      {/* Checklist View */}
+      <ChecklistView
+        groups={groups}
+        selectedDate={selectedDate}
+        getLocalDateDisplay={getLocalDateDisplay}
+        isSubtaskCompleted={isSubtaskCompleted}
+        onToggleSubtask={onToggleSubtask}
+        onToggleIntervalSubtaskEnabled={handleToggleIntervalSubtaskEnabled}
+        formatCountdown={formatCountdown}
+        onAddSubtask={onAddSubtask}
+        onDeleteSubtask={onDeleteSubtask}
+        onUpdateSubtask={onUpdateSubtask}
+        onDeleteGroup={onDeleteGroup}
+        onUpdateGroup={onUpdateGroup}
+      />
     </div>
   );
 };

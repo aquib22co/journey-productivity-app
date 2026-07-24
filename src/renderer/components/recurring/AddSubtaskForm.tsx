@@ -78,10 +78,9 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
         flexDirection: 'column',
         gap: '8px',
         marginTop: '8px',
-        padding: '8px',
-        background: 'rgba(255,255,255,0.01)',
-        border: '1px dashed rgba(255,255,255,0.05)',
-        borderRadius: '6px'
+        padding: '4px 0 0 0',
+        background: 'transparent',
+        border: 'none',
       }}
     >
       <div style={{ display: 'flex', gap: '6px' }}>

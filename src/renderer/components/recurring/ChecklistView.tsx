@@ -11,6 +11,11 @@ interface ChecklistViewProps {
   onToggleSubtask: (groupId: string, subtaskId: string, date: string) => void;
   onToggleIntervalSubtaskEnabled: (groupId: string, subtask: RecurringSubtask) => void;
   formatCountdown: (subtaskId: string, intervalHours: number) => string;
+  onAddSubtask: (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => void;
+  onDeleteSubtask: (groupId: string, subtaskId: string) => void;
+  onUpdateSubtask: (groupId: string, subtaskId: string, updatedFields: Partial<RecurringSubtask>) => void;
+  onDeleteGroup: (groupId: string) => void;
+  onUpdateGroup: (groupId: string, title: string) => void;
 }
 
 export const ChecklistView: React.FC<ChecklistViewProps> = ({
@@ -21,6 +26,11 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
   onToggleSubtask,
   onToggleIntervalSubtaskEnabled,
   formatCountdown,
+  onAddSubtask,
+  onDeleteSubtask,
+  onUpdateSubtask,
+  onDeleteGroup,
+  onUpdateGroup,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
@@ -38,7 +48,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 10px', color: 'var(--text-dim)', gap: '6px', textAlign: 'center' }}>
             <AlertCircle size={24} style={{ opacity: 0.3 }} />
             <span style={{ fontSize: '12px', fontWeight: 600 }}>No recurring tasks yet</span>
-            <span style={{ fontSize: '10px', maxWidth: '200px' }}>Click the gear icon in the header to set up groups like Prayers or Workout!</span>
+            <span style={{ fontSize: '10px', maxWidth: '200px' }}>Click "+ Group" in the header to create a group like Workout!</span>
           </div>
         ) : (
           groups.map(group => (
@@ -50,6 +60,11 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
               onToggleSubtask={onToggleSubtask}
               onToggleIntervalSubtaskEnabled={onToggleIntervalSubtaskEnabled}
               formatCountdown={formatCountdown}
+              onAddSubtask={onAddSubtask}
+              onDeleteSubtask={onDeleteSubtask}
+              onUpdateSubtask={onUpdateSubtask}
+              onDeleteGroup={onDeleteGroup}
+              onUpdateGroup={onUpdateGroup}
             />
           ))
         )}
