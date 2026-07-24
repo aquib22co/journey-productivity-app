@@ -21,7 +21,7 @@ function readData() {
     if (fs.existsSync(dataFilePath)) {
       const content = fs.readFileSync(dataFilePath, 'utf-8');
       const parsed = JSON.parse(content);
-      
+
       const completions: Record<string, any[]> = {};
       if (parsed.recurringCompletions && typeof parsed.recurringCompletions === 'object') {
         Object.entries(parsed.recurringCompletions).forEach(([dateStr, items]) => {
@@ -142,7 +142,7 @@ function createWindow() {
   const { width, height, x, y } = primaryDisplay.workArea;
 
   // Restore saved width/height or use defaults
-  let windowWidth = 960;
+  let windowWidth = 1000;
   let windowHeight = 620;
   if (savedBounds && typeof savedBounds.width === 'number' && typeof savedBounds.height === 'number') {
     windowWidth = Math.max(950, Math.min(1200, savedBounds.width));
@@ -184,7 +184,7 @@ function createWindow() {
     y: windowY,
     width: windowWidth,
     height: windowHeight,
-    minWidth: 950,
+    minWidth: 1100,
     minHeight: 600,
     maxWidth: 1200,
     maxHeight: 800,
@@ -315,157 +315,125 @@ if (!isPrimaryInstance) {
       win.focus();
     }
   });
-// Keep track of notified task IDs with a composite key: task.id + ':' + (task.dueDate || '') + ':' + (task.time || '')
-const notifiedKeys = new Set<string>();
+  // Keep track of notified task IDs with a composite key: task.id + ':' + (task.dueDate || '') + ':' + (task.time || '')
+  const notifiedKeys = new Set<string>();
 
-function getTaskDueTime(task: any): Date | null {
-  if (!task.dueDate) return null;
-  const [year, month, day] = task.dueDate.split('-').map(Number);
-  
-  let hours = 0;
-  let minutes = 0;
-  
-  if (task.time) {
-    const timeMatch = task.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (timeMatch) {
-      hours = parseInt(timeMatch[1], 10);
-      minutes = parseInt(timeMatch[2], 10);
-      const ampm = timeMatch[3].toUpperCase();
-      if (ampm === 'PM' && hours < 12) {
-        hours += 12;
-      } else if (ampm === 'AM' && hours === 12) {
-        hours = 0;
-      }
-    }
-  }
-  
-  return new Date(year, month - 1, day, hours, minutes, 0, 0);
-}
+  function getTaskDueTime(task: any): Date | null {
+    if (!task.dueDate) return null;
+    const [year, month, day] = task.dueDate.split('-').map(Number);
 
-function getRecurringSubtaskDueTime(timeStr: string, remind10MinBefore: boolean, date: Date): Date | null {
-  const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-  if (!timeMatch) return null;
-  
-  let hours = parseInt(timeMatch[1], 10);
-  let minutes = parseInt(timeMatch[2], 10);
-  const ampm = timeMatch[3].toUpperCase();
-  if (ampm === 'PM' && hours < 12) {
-    hours += 12;
-  } else if (ampm === 'AM' && hours === 12) {
-    hours = 0;
-  }
-  
-  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
-  if (remind10MinBefore) {
-    target.setMinutes(target.getMinutes() - 10);
-  }
-  return target;
-}
+    let hours = 0;
+    let minutes = 0;
 
-function checkDueTasks() {
-  const data = readData() as any;
-  const { tasks, recurringGroups, recurringCompletions, settings } = data;
-  if (!settings.enableNotifications) return;
-
-  const now = new Date();
-  let completionsChanged = false;
-  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  
-  // 1. Check regular tasks
-  tasks.forEach((task: any) => {
-    if (task.completedAt) return;
-    
-    const dueTime = getTaskDueTime(task);
-    if (!dueTime) return;
-    
-    if (dueTime <= now) {
-      const key = `${task.id}:${task.dueDate || ''}:${task.time || ''}`;
-      if (!notifiedKeys.has(key)) {
-        notifiedKeys.add(key);
-        
-        if (Notification.isSupported()) {
-          const notification = new Notification({
-            title: task.title,
-            body: task.description || 'This task is now due.',
-          });
-          
-          notification.on('click', () => {
-            toggleMainWindow();
-            if (win && win.webContents) {
-              win.webContents.send('highlight-task', task.id);
-            }
-          });
-          
-          notification.show();
+    if (task.time) {
+      const timeMatch = task.time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (timeMatch) {
+        hours = parseInt(timeMatch[1], 10);
+        minutes = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3].toUpperCase();
+        if (ampm === 'PM' && hours < 12) {
+          hours += 12;
+        } else if (ampm === 'AM' && hours === 12) {
+          hours = 0;
         }
       }
     }
-  });
 
-  // 2. Check recurring tasks
-  if (Array.isArray(recurringGroups)) {
-    recurringGroups.forEach((group: any) => {
-      if (Array.isArray(group.subtasks)) {
-        group.subtasks.forEach((subtask: any) => {
-          if (subtask.intervalHours) {
-            // Check if subtask is enabled
-            if (subtask.enabled === false) return;
+    return new Date(year, month - 1, day, hours, minutes, 0, 0);
+  }
 
-            // Search all keys in recurringCompletions for the latest event
-            let latestEvent: any = null;
-            if (recurringCompletions && typeof recurringCompletions === 'object') {
-              Object.entries(recurringCompletions).forEach(([dateStr, items]: [string, any]) => {
-                if (Array.isArray(items)) {
-                  items.forEach((evt: any) => {
-                    const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
-                    if (evtId === subtask.id) {
-                      const timestamp = typeof evt === 'string' 
-                        ? new Date(dateStr + 'T12:00:00').toISOString()
-                        : evt.timestamp;
-                      if (!latestEvent || timestamp > latestEvent.timestamp) {
-                        latestEvent = { subtaskId: evtId, timestamp };
-                      }
-                    }
-                  });
-                }
-              });
-            }
+  function getRecurringSubtaskDueTime(timeStr: string, remind10MinBefore: boolean, date: Date): Date | null {
+    const timeMatch = timeStr.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!timeMatch) return null;
 
-            // If there's no completion event, initialize it to the current time so it starts counting down
-            const lastTime = latestEvent ? new Date(latestEvent.timestamp) : now;
-            if (!latestEvent) {
-              if (!recurringCompletions[todayKey]) {
-                recurringCompletions[todayKey] = [];
+    let hours = parseInt(timeMatch[1], 10);
+    let minutes = parseInt(timeMatch[2], 10);
+    const ampm = timeMatch[3].toUpperCase();
+    if (ampm === 'PM' && hours < 12) {
+      hours += 12;
+    } else if (ampm === 'AM' && hours === 12) {
+      hours = 0;
+    }
+
+    const target = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
+    if (remind10MinBefore) {
+      target.setMinutes(target.getMinutes() - 10);
+    }
+    return target;
+  }
+
+  function checkDueTasks() {
+    const data = readData() as any;
+    const { tasks, recurringGroups, recurringCompletions, settings } = data;
+    if (!settings.enableNotifications) return;
+
+    const now = new Date();
+    let completionsChanged = false;
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+    // 1. Check regular tasks
+    tasks.forEach((task: any) => {
+      if (task.completedAt) return;
+
+      const dueTime = getTaskDueTime(task);
+      if (!dueTime) return;
+
+      if (dueTime <= now) {
+        const key = `${task.id}:${task.dueDate || ''}:${task.time || ''}`;
+        if (!notifiedKeys.has(key)) {
+          notifiedKeys.add(key);
+
+          if (Notification.isSupported()) {
+            const notification = new Notification({
+              title: task.title,
+              body: task.description || 'This task is now due.',
+            });
+
+            notification.on('click', () => {
+              toggleMainWindow();
+              if (win && win.webContents) {
+                win.webContents.send('highlight-task', task.id);
               }
-              recurringCompletions[todayKey].push({
-                subtaskId: subtask.id,
-                timestamp: now.toISOString()
-              });
-              completionsChanged = true;
-              return;
-            }
+            });
 
-            const nextDue = new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1000);
+            notification.show();
+          }
+        }
+      }
+    });
 
-            if (nextDue <= now) {
-              const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
-              if (!notifiedKeys.has(key)) {
-                notifiedKeys.add(key);
+    // 2. Check recurring tasks
+    if (Array.isArray(recurringGroups)) {
+      recurringGroups.forEach((group: any) => {
+        if (Array.isArray(group.subtasks)) {
+          group.subtasks.forEach((subtask: any) => {
+            if (subtask.intervalHours) {
+              // Check if subtask is enabled
+              if (subtask.enabled === false) return;
 
-                if (Notification.isSupported()) {
-                  const notification = new Notification({
-                    title: `${group.title}: ${subtask.title}`,
-                    body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
-                  });
+              // Search all keys in recurringCompletions for the latest event
+              let latestEvent: any = null;
+              if (recurringCompletions && typeof recurringCompletions === 'object') {
+                Object.entries(recurringCompletions).forEach(([dateStr, items]: [string, any]) => {
+                  if (Array.isArray(items)) {
+                    items.forEach((evt: any) => {
+                      const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+                      if (evtId === subtask.id) {
+                        const timestamp = typeof evt === 'string'
+                          ? new Date(dateStr + 'T12:00:00').toISOString()
+                          : evt.timestamp;
+                        if (!latestEvent || timestamp > latestEvent.timestamp) {
+                          latestEvent = { subtaskId: evtId, timestamp };
+                        }
+                      }
+                    });
+                  }
+                });
+              }
 
-                  notification.on('click', () => {
-                    toggleMainWindow();
-                  });
-
-                  notification.show();
-                }
-
-                // Auto-reset
+              // If there's no completion event, initialize it to the current time so it starts counting down
+              const lastTime = latestEvent ? new Date(latestEvent.timestamp) : now;
+              if (!latestEvent) {
                 if (!recurringCompletions[todayKey]) {
                   recurringCompletions[todayKey] = [];
                 }
@@ -474,146 +442,178 @@ function checkDueTasks() {
                   timestamp: now.toISOString()
                 });
                 completionsChanged = true;
+                return;
               }
-            }
-          } else if (subtask.time) {
-            const completionsToday = recurringCompletions?.[todayKey] || [];
-            const isCompleted = completionsToday.some((evt: any) => {
-              const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
-              return evtId === subtask.id;
-            });
-            if (isCompleted) return;
 
-            const notifyTime = getRecurringSubtaskDueTime(subtask.time, !!subtask.remind10MinBefore, now);
-            if (!notifyTime) return;
+              const nextDue = new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1000);
 
-            if (notifyTime <= now) {
-              const key = `recurring:${subtask.id}:${todayKey}`;
-              if (!notifiedKeys.has(key)) {
-                notifiedKeys.add(key);
+              if (nextDue <= now) {
+                const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
+                if (!notifiedKeys.has(key)) {
+                  notifiedKeys.add(key);
 
-                if (Notification.isSupported()) {
-                  const bodyText = subtask.remind10MinBefore
-                    ? `10 min left for your habit: ${subtask.title}`
-                    : `Time for your habit: ${subtask.title}`;
-                  const notification = new Notification({
-                    title: `${group.title}: ${subtask.title}`,
-                    body: bodyText,
+                  if (Notification.isSupported()) {
+                    const notification = new Notification({
+                      title: `${group.title}: ${subtask.title}`,
+                      body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
+                    });
+
+                    notification.on('click', () => {
+                      toggleMainWindow();
+                    });
+
+                    notification.show();
+                  }
+
+                  // Auto-reset
+                  if (!recurringCompletions[todayKey]) {
+                    recurringCompletions[todayKey] = [];
+                  }
+                  recurringCompletions[todayKey].push({
+                    subtaskId: subtask.id,
+                    timestamp: now.toISOString()
                   });
-
-                  notification.on('click', () => {
-                    toggleMainWindow();
-                  });
-
-                  notification.show();
+                  completionsChanged = true;
                 }
               }
-            }
-          }
-        });
-      }
-    });
-  }
-
-  if (completionsChanged) {
-    data.recurringCompletions = recurringCompletions;
-    writeData(data);
-    if (win && win.webContents) {
-      win.webContents.send('recurring-completions-updated', recurringCompletions);
-    }
-  }
-}
-
-function startDueTaskScheduler() {
-  const data = readData() as any;
-  const { tasks, recurringGroups, recurringCompletions } = data;
-  const now = new Date();
-  const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  let completionsChanged = false;
-  
-  tasks.forEach((task: any) => {
-    if (!task.completedAt) {
-      const dueTime = getTaskDueTime(task);
-      if (dueTime && dueTime <= now) {
-        const key = `${task.id}:${task.dueDate || ''}:${task.time || ''}`;
-        notifiedKeys.add(key);
-      }
-    }
-  });
-
-  if (Array.isArray(recurringGroups)) {
-    recurringGroups.forEach((group: any) => {
-      if (Array.isArray(group.subtasks)) {
-        group.subtasks.forEach((subtask: any) => {
-          if (subtask.intervalHours) {
-            if (subtask.enabled === false) return;
-
-            let latestEvent: any = null;
-            if (recurringCompletions && typeof recurringCompletions === 'object') {
-              Object.entries(recurringCompletions).forEach(([dateStr, items]: [string, any]) => {
-                if (Array.isArray(items)) {
-                  items.forEach((evt: any) => {
-                    const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
-                    if (evtId === subtask.id) {
-                      const timestamp = typeof evt === 'string' 
-                        ? new Date(dateStr + 'T12:00:00').toISOString()
-                        : evt.timestamp;
-                      if (!latestEvent || timestamp > latestEvent.timestamp) {
-                        latestEvent = { subtaskId: evtId, timestamp };
-                      }
-                    }
-                  });
-                }
+            } else if (subtask.time) {
+              const completionsToday = recurringCompletions?.[todayKey] || [];
+              const isCompleted = completionsToday.some((evt: any) => {
+                const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+                return evtId === subtask.id;
               });
-            }
+              if (isCompleted) return;
 
-            const lastTime = latestEvent ? new Date(latestEvent.timestamp) : now;
-            if (!latestEvent) {
-              if (!recurringCompletions[todayKey]) {
-                recurringCompletions[todayKey] = [];
-              }
-              recurringCompletions[todayKey].push({
-                subtaskId: subtask.id,
-                timestamp: now.toISOString()
-              });
-              completionsChanged = true;
-              return;
-            }
-
-            const nextDue = new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1000);
-
-            if (nextDue <= now) {
-              const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
-              notifiedKeys.add(key);
-            }
-          } else if (subtask.time) {
-            const completionsToday = recurringCompletions?.[todayKey] || [];
-            const isCompleted = completionsToday.some((evt: any) => {
-              const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
-              return evtId === subtask.id;
-            });
-            if (!isCompleted) {
               const notifyTime = getRecurringSubtaskDueTime(subtask.time, !!subtask.remind10MinBefore, now);
-              if (notifyTime && notifyTime <= now) {
+              if (!notifyTime) return;
+
+              if (notifyTime <= now) {
                 const key = `recurring:${subtask.id}:${todayKey}`;
-                notifiedKeys.add(key);
+                if (!notifiedKeys.has(key)) {
+                  notifiedKeys.add(key);
+
+                  if (Notification.isSupported()) {
+                    const bodyText = subtask.remind10MinBefore
+                      ? `10 min left for your habit: ${subtask.title}`
+                      : `Time for your habit: ${subtask.title}`;
+                    const notification = new Notification({
+                      title: `${group.title}: ${subtask.title}`,
+                      body: bodyText,
+                    });
+
+                    notification.on('click', () => {
+                      toggleMainWindow();
+                    });
+
+                    notification.show();
+                  }
+                }
               }
             }
-          }
-        });
+          });
+        }
+      });
+    }
+
+    if (completionsChanged) {
+      data.recurringCompletions = recurringCompletions;
+      writeData(data);
+      if (win && win.webContents) {
+        win.webContents.send('recurring-completions-updated', recurringCompletions);
+      }
+    }
+  }
+
+  function startDueTaskScheduler() {
+    const data = readData() as any;
+    const { tasks, recurringGroups, recurringCompletions } = data;
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    let completionsChanged = false;
+
+    tasks.forEach((task: any) => {
+      if (!task.completedAt) {
+        const dueTime = getTaskDueTime(task);
+        if (dueTime && dueTime <= now) {
+          const key = `${task.id}:${task.dueDate || ''}:${task.time || ''}`;
+          notifiedKeys.add(key);
+        }
       }
     });
-  }
 
-  if (completionsChanged) {
-    data.recurringCompletions = recurringCompletions;
-    writeData(data);
-  }
+    if (Array.isArray(recurringGroups)) {
+      recurringGroups.forEach((group: any) => {
+        if (Array.isArray(group.subtasks)) {
+          group.subtasks.forEach((subtask: any) => {
+            if (subtask.intervalHours) {
+              if (subtask.enabled === false) return;
 
-  // Run check immediately, and then every 60 seconds
-  checkDueTasks();
-  setInterval(checkDueTasks, 60000);
-}
+              let latestEvent: any = null;
+              if (recurringCompletions && typeof recurringCompletions === 'object') {
+                Object.entries(recurringCompletions).forEach(([dateStr, items]: [string, any]) => {
+                  if (Array.isArray(items)) {
+                    items.forEach((evt: any) => {
+                      const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+                      if (evtId === subtask.id) {
+                        const timestamp = typeof evt === 'string'
+                          ? new Date(dateStr + 'T12:00:00').toISOString()
+                          : evt.timestamp;
+                        if (!latestEvent || timestamp > latestEvent.timestamp) {
+                          latestEvent = { subtaskId: evtId, timestamp };
+                        }
+                      }
+                    });
+                  }
+                });
+              }
+
+              const lastTime = latestEvent ? new Date(latestEvent.timestamp) : now;
+              if (!latestEvent) {
+                if (!recurringCompletions[todayKey]) {
+                  recurringCompletions[todayKey] = [];
+                }
+                recurringCompletions[todayKey].push({
+                  subtaskId: subtask.id,
+                  timestamp: now.toISOString()
+                });
+                completionsChanged = true;
+                return;
+              }
+
+              const nextDue = new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1000);
+
+              if (nextDue <= now) {
+                const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
+                notifiedKeys.add(key);
+              }
+            } else if (subtask.time) {
+              const completionsToday = recurringCompletions?.[todayKey] || [];
+              const isCompleted = completionsToday.some((evt: any) => {
+                const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
+                return evtId === subtask.id;
+              });
+              if (!isCompleted) {
+                const notifyTime = getRecurringSubtaskDueTime(subtask.time, !!subtask.remind10MinBefore, now);
+                if (notifyTime && notifyTime <= now) {
+                  const key = `recurring:${subtask.id}:${todayKey}`;
+                  notifiedKeys.add(key);
+                }
+              }
+            }
+          });
+        }
+      });
+    }
+
+    if (completionsChanged) {
+      data.recurringCompletions = recurringCompletions;
+      writeData(data);
+    }
+
+    // Run check immediately, and then every 60 seconds
+    checkDueTasks();
+    setInterval(checkDueTasks, 60000);
+  }
   app.whenReady().then(() => {
     createWindow();
     createTray();

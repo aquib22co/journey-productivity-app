@@ -134,7 +134,7 @@ function createTray() {
 function createWindow() {
 	const savedBounds = readData().windowBounds;
 	const { width, height, x, y } = screen.getPrimaryDisplay().workArea;
-	let windowWidth = 960;
+	let windowWidth = 1e3;
 	let windowHeight = 620;
 	if (savedBounds && typeof savedBounds.width === "number" && typeof savedBounds.height === "number") {
 		windowWidth = Math.max(950, Math.min(1200, savedBounds.width));
@@ -164,7 +164,7 @@ function createWindow() {
 		y: windowY,
 		width: windowWidth,
 		height: windowHeight,
-		minWidth: 950,
+		minWidth: 1100,
 		minHeight: 600,
 		maxWidth: 1200,
 		maxHeight: 800,

@@ -81,11 +81,11 @@ export const AddTaskPanel: React.FC<AddTaskPanelProps> = ({ onSave, onCancel }) 
           type="button"
           onClick={onCancel}
           className="win-btn"
-          style={{ 
-            width: '28px', 
-            height: '28px', 
-            display: 'flex', 
-            alignItems: 'center', 
+          style={{
+            width: '28px',
+            height: '28px',
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'center',
             borderRadius: '6px',
             background: 'rgba(255, 255, 255, 0.03)',
@@ -101,9 +101,9 @@ export const AddTaskPanel: React.FC<AddTaskPanelProps> = ({ onSave, onCancel }) 
           <input
             type="text"
             className="input-field"
-            style={{ 
-              fontSize: '14.5px', 
-              fontWeight: '700', 
+            style={{
+              fontSize: '14.5px',
+              fontWeight: '700',
               color: 'var(--text-main)',
               background: 'transparent',
               border: 'none',
@@ -128,9 +128,9 @@ export const AddTaskPanel: React.FC<AddTaskPanelProps> = ({ onSave, onCancel }) 
           placeholder="Add description..."
           value={desc}
           onChange={(e) => setDesc(e.target.value)}
-          style={{ 
-            fontSize: '12px', 
-            color: 'var(--text-main)', 
+          style={{
+            fontSize: '12px',
+            color: 'var(--text-main)',
             background: 'rgba(255,255,255,0.015)',
             border: '1px solid rgba(255,255,255,0.03)',
             padding: '8px 10px',
@@ -183,11 +183,11 @@ export const AddTaskPanel: React.FC<AddTaskPanelProps> = ({ onSave, onCancel }) 
               onBlur={handleMinBlur}
               disabled={!hour}
             />
-            <div style={{ 
-              display: 'flex', 
-              borderRadius: '6px', 
-              overflow: 'hidden', 
-              border: '1px solid rgba(255, 255, 255, 0.08)', 
+            <div style={{
+              display: 'flex',
+              borderRadius: '6px',
+              overflow: 'hidden',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
               background: 'rgba(255, 255, 255, 0.02)',
               height: '100%',
               opacity: hour ? 1 : 0.5,
@@ -264,18 +264,18 @@ export const AddTaskPanel: React.FC<AddTaskPanelProps> = ({ onSave, onCancel }) 
 
       {/* Save / Cancel Actions */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', alignItems: 'center', marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.04)', paddingTop: '8px' }}>
-        <button 
+        <button
           type="button"
-          onClick={onCancel} 
-          className="btn btn-secondary" 
+          onClick={onCancel}
+          className="btn btn-secondary"
           style={{ padding: '5px 10px', fontSize: '11px' }}
         >
           Cancel
         </button>
-        <button 
+        <button
           type="button"
-          onClick={handleAddClick} 
-          className="btn" 
+          onClick={handleAddClick}
+          className="btn"
           disabled={!title.trim()}
           style={{ padding: '5px 12px', fontSize: '11px', background: 'var(--accent-color)', color: '#ffffff', opacity: title.trim() ? 1 : 0.5 }}
         >
