@@ -111,10 +111,41 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
 
   const isOverdue = (task: Task) => {
     if (task.completedAt || !task.dueDate) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const due = new Date(task.dueDate);
-    return due < today;
+    
+    // Parse the due date (YYYY-MM-DD) into local date parts to avoid timezone shifting issues
+    const dateParts = task.dueDate.split('-');
+    if (dateParts.length !== 3) return false;
+    const year = parseInt(dateParts[0], 10);
+    const month = parseInt(dateParts[1], 10) - 1; // 0-indexed month
+    const day = parseInt(dateParts[2], 10);
+    
+    const dueDateTime = new Date(year, month, day);
+    
+    if (task.time) {
+      // Parse time (e.g. "07:00 PM" or "7:00 PM" or "12:30 AM")
+      const timeMatch = task.time.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
+      if (timeMatch) {
+        let hours = parseInt(timeMatch[1], 10);
+        const minutes = parseInt(timeMatch[2], 10);
+        const ampm = timeMatch[3].toUpperCase();
+        
+        if (ampm === 'PM' && hours < 12) {
+          hours += 12;
+        } else if (ampm === 'AM' && hours === 12) {
+          hours = 0;
+        }
+        dueDateTime.setHours(hours, minutes, 0, 0);
+      } else {
+        // If time format is invalid, default to the very end of the day (23:59:59)
+        dueDateTime.setHours(23, 59, 59, 999);
+      }
+    } else {
+      // If no time is specified, default to the very end of the day (23:59:59)
+      dueDateTime.setHours(23, 59, 59, 999);
+    }
+    
+    const now = new Date();
+    return now > dueDateTime;
   };
 
   const formatDate = (dateStr: string) => {
