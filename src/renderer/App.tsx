@@ -3,7 +3,7 @@ import type { Task, Settings, RecurringGroup, RecurringCompletions, RecurringSub
 import { TaskList } from './components/TaskList';
 import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
-import { CompletedTasksPanel, getLocalDateString, getSevenDaysAgoString } from './components/CompletedTasksPanel';
+import { CompletedTasksPanel, getLocalDateString } from './components/CompletedTasksPanel';
 import { RecurringTasksPanel } from './components/RecurringTasksPanel';
 import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
