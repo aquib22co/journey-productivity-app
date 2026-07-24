@@ -5,9 +5,10 @@ interface HeatmapProps {
   tasks: Task[];
   settings: Settings;
   onCellClick?: (dateStr: string) => void;
+  selectedDate?: string | null;
 }
 
-export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings, onCellClick }) => {
+export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings, onCellClick, selectedDate }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredCell, setHoveredCell] = useState<{
     dateStr: string;
@@ -202,6 +203,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings, onCellClick }
                 const count = completionsByDate[key] || 0;
                 const level = getLevel(count);
                 const isFuture = date > realToday;
+                const isSelected = selectedDate === key;
 
                 return (
                   <div
@@ -211,6 +213,7 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings, onCellClick }
                       height: '15px',
                       borderRadius: '3.5px',
                       backgroundColor: `var(--hm-level-${level})`,
+                      boxShadow: isSelected ? '0 0 0 1.5px var(--accent-color), 0 0 6px var(--accent-color)' : 'none',
                       transition: 'transform 0.15s ease, filter 0.15s ease',
                       opacity: isFuture ? 0.25 : 1,
                       cursor: isFuture ? 'default' : 'pointer',

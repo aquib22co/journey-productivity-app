@@ -133,9 +133,29 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
     return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
   });
 
-  const subtitleText = sortedCompletedTasks.length > 0
-    ? "All your activities are completed. Great job! "
-    : "No activities completed for this period.";
+  const getPeriodLabel = () => {
+    if (startDate === endDate) {
+      const todayStr = getLocalDateString(new Date());
+      if (startDate === todayStr) {
+        return 'Today';
+      }
+      return formatDateDisplay(startDate);
+    }
+    return `${formatDateDisplay(startDate)} - ${formatDateDisplay(endDate)}`;
+  };
+
+  const getCompletedCountText = () => {
+    const count = sortedCompletedTasks.length;
+    if (count === 0) {
+      return 'No activities completed';
+    }
+    if (count === 1) {
+      return '1 activity completed';
+    }
+    return `${count} activities completed`;
+  };
+
+  const subtitleText = `${getCompletedCountText()} • ${getPeriodLabel()}`;
 
   return (
     <div className="widget-card" style={{ flex: 1, height: '100%', position: 'relative', display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px 18px' }}>

@@ -121,7 +121,7 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   // History panel filter state
-  const [historyStartDate, setHistoryStartDate] = useState<string>(getSevenDaysAgoString);
+  const [historyStartDate, setHistoryStartDate] = useState<string>(() => getLocalDateString(new Date()));
   const [historyEndDate, setHistoryEndDate] = useState<string>(() => getLocalDateString(new Date()));
   const [showHistoryFilter, setShowHistoryFilter] = useState(false);
 
@@ -533,12 +533,11 @@ const App: React.FC = () => {
   };
 
   const handleHeatmapCellClick = (dateStr: string) => {
-    // If the clicked date is already selected, reset back to last 7 days!
+    // If the clicked date is already selected, reset back to today!
     const todayStr = getLocalDateString(new Date());
-    const sevenDaysAgoStr = getSevenDaysAgoString();
     
     if (historyStartDate === dateStr && historyEndDate === dateStr) {
-      setHistoryStartDate(sevenDaysAgoStr);
+      setHistoryStartDate(todayStr);
       setHistoryEndDate(todayStr);
     } else {
       setHistoryStartDate(dateStr);
@@ -849,7 +848,12 @@ const App: React.FC = () => {
 
               {/* Middle Column: Heatmap & CompletedTasksPanel */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', flex: 1, minHeight: 0, minWidth: 0 }}>
-                <Heatmap tasks={allTasks} settings={settings} onCellClick={handleHeatmapCellClick} />
+                <Heatmap 
+                  tasks={allTasks} 
+                  settings={settings} 
+                  onCellClick={handleHeatmapCellClick} 
+                  selectedDate={historyStartDate === historyEndDate ? historyStartDate : null} 
+                />
                 <CompletedTasksPanel
                   tasks={allTasks}
                   onUpdateTask={handleUpdateTask}
