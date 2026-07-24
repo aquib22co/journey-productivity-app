@@ -834,7 +834,7 @@ const App: React.FC = () => {
                 <RecurringTasksPanel
                   groups={recurringGroups}
                   completions={recurringCompletions}
-                  selectedDate={historyStartDate === historyEndDate ? historyStartDate : getLocalDateString(new Date())}
+                  selectedDate={getLocalDateString(new Date())}
                   onToggleSubtask={handleToggleSubtask}
                   onAddGroup={handleAddRecurringGroup}
                   onDeleteGroup={handleDeleteRecurringGroup}
