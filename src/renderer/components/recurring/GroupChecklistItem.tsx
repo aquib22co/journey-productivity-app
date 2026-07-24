@@ -142,61 +142,109 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
             onClick={() => setExpanded(!expanded)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', cursor: 'pointer' }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               {expanded ? <ChevronDown size={14} className="text-slate-400" /> : <ChevronRight size={14} className="text-slate-400" />}
               <span style={{ fontSize: '13.5px', fontWeight: 600, color: 'var(--text-main)' }}>
                 {group.title}
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsAddingSubtask(!isAddingSubtask);
-                    setIsEditingGroup(false);
-                    if (!expanded) setExpanded(true);
+              {totalSubtasks > 0 && (
+                <span 
+                  style={{ 
+                    fontSize: '10.5px', 
+                    fontWeight: 600, 
+                    color: percent === 100 ? 'var(--success-color)' : 'var(--text-muted)',
+                    background: 'rgba(255,255,255,0.03)',
+                    padding: '1px 5px',
+                    borderRadius: '4px',
+                    marginLeft: '4px'
                   }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: isAddingSubtask ? 'var(--accent-color)' : 'var(--text-dim)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    opacity: 0.7,
-                    transition: 'color 0.2s, opacity 0.2s'
-                  }}
-                  className="hover:opacity-100"
-                  title="Quick Add Subtask"
                 >
-                  <Plus size={13} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleToggleEditGroup();
-                  }}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: isEditingGroup ? 'var(--accent-color)' : 'var(--text-dim)',
-                    cursor: 'pointer',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    opacity: 0.7,
-                    transition: 'color 0.2s, opacity 0.2s'
-                  }}
-                  className="hover:opacity-100"
-                  title="Edit Group Subtasks"
-                >
-                  <Edit3 size={11} />
-                </button>
-              </div>
+                  {completedCount}/{totalSubtasks}
+                </span>
+              )}
             </div>
-            {totalSubtasks > 0 && (
-              <span style={{ fontSize: '11px', fontWeight: 500, color: percent === 100 ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                {completedCount}/{totalSubtasks}
-              </span>
-            )}
+            
+            <div 
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsAddingSubtask(!isAddingSubtask);
+                  setIsEditingGroup(false);
+                  if (!expanded) setExpanded(true);
+                }}
+                style={{
+                  background: isAddingSubtask ? 'rgba(0, 132, 255, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                  border: isAddingSubtask ? '1px solid rgba(0, 132, 255, 0.2)' : '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '5px',
+                  color: isAddingSubtask ? 'var(--accent-color)' : 'var(--text-muted)',
+                  width: '24px',
+                  height: '24px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: 0.8
+                }}
+                className="hover:opacity-100 hover:bg-slate-800"
+                title="Quick Add Subtask"
+              >
+                <Plus size={13} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToggleEditGroup();
+                }}
+                style={{
+                  background: isEditingGroup ? 'rgba(0, 132, 255, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                  border: isEditingGroup ? '1px solid rgba(0, 132, 255, 0.2)' : '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '5px',
+                  color: isEditingGroup ? 'var(--accent-color)' : 'var(--text-muted)',
+                  width: '24px',
+                  height: '24px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: 0.8
+                }}
+                className="hover:opacity-100 hover:bg-slate-800"
+                title="Edit Group Subtasks"
+              >
+                <Edit3 size={13} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (confirm(`Are you sure you want to delete the group "${group.title}"?`)) {
+                    onDeleteGroup(group.id);
+                  }
+                }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.03)',
+                  border: '1px solid rgba(255, 255, 255, 0.06)',
+                  borderRadius: '5px',
+                  color: 'var(--danger-color)',
+                  width: '24px',
+                  height: '24px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  opacity: 0.8
+                }}
+                className="hover:opacity-100 hover:bg-slate-800"
+                title="Delete Group"
+              >
+                <Trash2 size={13} />
+              </button>
+            </div>
           </div>
         )}
       </div>

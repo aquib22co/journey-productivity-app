@@ -36,6 +36,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
 }) => {
   const [isAddingGroup, setIsAddingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [isBtnHovered, setIsBtnHovered] = useState(false);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -195,25 +196,31 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
         </div>
         
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           onClick={() => setIsAddingGroup(!isAddingGroup)}
+          onMouseEnter={() => setIsBtnHovered(true)}
+          onMouseLeave={() => setIsBtnHovered(false)}
           style={{ 
             height: '28px',
-            padding: '0 8px',
-            background: isAddingGroup ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255, 255, 255, 0.03)',
-            borderColor: isAddingGroup ? 'var(--success-color)' : 'rgba(255, 255, 255, 0.05)',
-            color: isAddingGroup ? 'var(--success-color)' : 'var(--text-muted)',
+            padding: '0 10px',
+            background: 'var(--accent-color)',
+            color: '#ffffff',
+            border: 'none',
+            borderRadius: '6px',
             fontSize: '11px',
             fontWeight: 600,
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '4px'
+            gap: '4px',
+            opacity: isBtnHovered ? 0.9 : 1,
+            transition: 'all 0.15s ease',
+            cursor: 'pointer'
           }}
           title="Add a new habit group"
         >
-          <Plus size={12} />
-          <span>Group</span>
+          <Plus size={12} style={{ color: '#ffffff' }} />
+          <span style={{ color: '#ffffff' }}>Group</span>
         </Button>
       </div>
 
