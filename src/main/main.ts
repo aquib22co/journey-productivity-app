@@ -145,7 +145,7 @@ function createWindow() {
   let windowWidth = 960;
   let windowHeight = 620;
   if (savedBounds && typeof savedBounds.width === 'number' && typeof savedBounds.height === 'number') {
-    windowWidth = Math.max(800, Math.min(1200, savedBounds.width));
+    windowWidth = Math.max(950, Math.min(1200, savedBounds.width));
     windowHeight = Math.max(800, Math.min(800, savedBounds.height));
   }
 
@@ -184,7 +184,7 @@ function createWindow() {
     y: windowY,
     width: windowWidth,
     height: windowHeight,
-    minWidth: 800,
+    minWidth: 950,
     minHeight: 600,
     maxWidth: 1200,
     maxHeight: 800,

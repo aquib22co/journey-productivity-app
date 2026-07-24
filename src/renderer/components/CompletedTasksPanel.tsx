@@ -394,7 +394,7 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
                           </div>
                         </div>
 
-                        {/* Task Item Card */}
+                         {/* Task Item Card */}
                         <div
                           onClick={() => setDetailedTask(task)}
                           style={{
@@ -413,31 +413,39 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
                           className="task-row-history-card"
                         >
                           {/* Category Box */}
-                          <div style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                            ...catStyles
-                          }}>
+                          <div 
+                            className="history-card-category-box"
+                            style={{
+                              width: '36px',
+                              height: '36px',
+                              borderRadius: '8px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              ...catStyles
+                            }}
+                          >
                             {getHistoryCategoryIcon(task.category)}
                           </div>
 
                           {/* Title & Metadata */}
                           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            <span style={{ display: 'block', fontSize: '13.5px', fontWeight: '600', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <span 
+                              className="history-card-title"
+                              style={{ display: 'block', fontSize: '13.5px', fontWeight: '600', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                            >
                               {task.title}
                             </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--text-dim)' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <div 
+                              className="history-card-metadata"
+                              style={{ display: 'flex', alignItems: 'center', gap: '4px 10px', flexWrap: 'wrap', fontSize: '10.5px', color: 'var(--text-dim)' }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
                                 <Calendar size={11} />
                                 <span>{formatDateDisplay(task.completedAt || undefined)}</span>
                               </div>
-                              <span>•</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', flexShrink: 0 }}>
                                 <Clock size={11} />
                                 <span>{task.completedAt ? new Date(task.completedAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : ''}</span>
                               </div>
@@ -445,18 +453,21 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
                           </div>
 
                           {/* Arrow Chevron Button */}
-                          <div style={{
-                            width: '28px',
-                            height: '28px',
-                            borderRadius: '6px',
-                            border: '1px solid rgba(255, 255, 255, 0.05)',
-                            background: 'rgba(255, 255, 255, 0.01)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#10b981',
-                            flexShrink: 0
-                          }}>
+                          <div 
+                            className="history-card-chevron"
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '6px',
+                              border: '1px solid rgba(255, 255, 255, 0.05)',
+                              background: 'rgba(255, 255, 255, 0.01)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#10b981',
+                              flexShrink: 0
+                            }}
+                          >
                             <ChevronRight size={14} />
                           </div>
                         </div>
@@ -471,12 +482,51 @@ export const CompletedTasksPanel: React.FC<CompletedTasksPanelProps> = ({
         )}
       </div>
 
-      {/* Hover effects */}
+      {/* Hover and Responsive CSS Styling */}
       <style>{`
         .task-row-history-card:hover {
           background: rgba(255, 255, 255, 0.03) !important;
           border-color: rgba(255, 255, 255, 0.08) !important;
           transform: translateY(-1px);
+        }
+        @media (max-width: 360px) {
+          .task-row-history-card {
+            padding: 8px 10px !important;
+            gap: 8px !important;
+          }
+          .history-card-category-box {
+            width: 30px !important;
+            height: 30px !important;
+          }
+          .history-card-title {
+            font-size: 12px !important;
+          }
+          .history-card-metadata {
+            font-size: 9.5px !important;
+            gap: 2px 6px !important;
+          }
+          .history-card-chevron {
+            width: 22px !important;
+            height: 22px !important;
+          }
+        }
+        @media (max-width: 280px) {
+          .task-row-history-card {
+            padding: 6px 8px !important;
+            gap: 6px !important;
+          }
+          .history-card-category-box {
+            display: none !important;
+          }
+          .history-card-chevron {
+            display: none !important;
+          }
+          .history-card-title {
+            font-size: 11px !important;
+          }
+          .history-card-metadata {
+            font-size: 8.5px !important;
+          }
         }
       `}</style>
     </div>

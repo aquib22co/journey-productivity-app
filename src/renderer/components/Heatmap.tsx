@@ -153,9 +153,9 @@ export const Heatmap: React.FC<HeatmapProps> = ({ tasks, settings, onCellClick, 
   const realToday = new Date();
 
   return (
-    <div className="widget-card" style={{ position: 'relative', flex: '1', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '20px 22px' }}>
-      <div className="widget-card-header" style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span className="widget-card-title" style={{ fontSize: '16.5px', fontWeight: '700' }}>Your Journey</span>
+    <div className="widget-card" style={{ position: 'relative', display: 'flex', flexDirection: 'column', padding: '12px 16px' }}>
+      <div className="widget-card-header" style={{ marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span className="widget-card-title" style={{ fontSize: '14.5px', fontWeight: '700' }}>Your Journey</span>
         
         {/* Less/More Legend in Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)', userSelect: 'none' }}>
