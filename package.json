@@ -8,7 +8,15 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.yourname.journey",
+    "productName": "Journey",
+    "win": {
+      "target": "nsis"
+    }
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
