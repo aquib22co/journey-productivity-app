@@ -452,7 +452,9 @@ if (!isPrimaryInstance) {
                 if (!notifiedKeys.has(key)) {
                   notifiedKeys.add(key);
 
-                  if (Notification.isSupported()) {
+                  // Only notify if the task became due while the app was on (within last 2 minutes)
+                  const isFresh = (now.getTime() - nextDue.getTime()) <= 120000;
+                  if (isFresh && Notification.isSupported()) {
                     const notification = new Notification({
                       title: `${group.title}: ${subtask.title}`,
                       body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
@@ -583,8 +585,16 @@ if (!isPrimaryInstance) {
               const nextDue = new Date(lastTime.getTime() + subtask.intervalHours * 60 * 60 * 1000);
 
               if (nextDue <= now) {
-                const key = `recurring-interval:${subtask.id}:${lastTime.getTime()}`;
-                notifiedKeys.add(key);
+                // Since this runs at startup, this task became due while the app/laptop was off.
+                // We should NOT notify, but we DO auto-reset it so the interval starts counting down from now.
+                if (!recurringCompletions[todayKey]) {
+                  recurringCompletions[todayKey] = [];
+                }
+                recurringCompletions[todayKey].push({
+                  subtaskId: subtask.id,
+                  timestamp: now.toISOString()
+                });
+                completionsChanged = true;
               }
             } else if (subtask.time) {
               const completionsToday = recurringCompletions?.[todayKey] || [];

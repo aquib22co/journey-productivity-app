@@ -115,25 +115,28 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
           if (diffMs <= 0) {
             onResetIntervalSubtask(subtask.id, selectedDate);
 
-            // Desktop notification
-            try {
-              if (typeof window !== 'undefined' && 'Notification' in window) {
-                if (Notification.permission === 'granted') {
-                  new Notification(`${group.title}: ${subtask.title}`, {
-                    body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
-                  });
-                } else if (Notification.permission !== 'denied') {
-                  Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                      new Notification(`${group.title}: ${subtask.title}`, {
-                        body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
-                      });
-                    }
-                  });
+            // Desktop notification - only send if it became due while the app was on (within last 15 seconds)
+            const isFresh = diffMs >= -15000;
+            if (isFresh) {
+              try {
+                if (typeof window !== 'undefined' && 'Notification' in window) {
+                  if (Notification.permission === 'granted') {
+                    new Notification(`${group.title}: ${subtask.title}`, {
+                      body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
+                    });
+                  } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(permission => {
+                      if (permission === 'granted') {
+                        new Notification(`${group.title}: ${subtask.title}`, {
+                          body: `Time for your habit: ${subtask.title} (due every ${subtask.intervalHours}h)`,
+                        });
+                      }
+                    });
+                  }
                 }
+              } catch (e) {
+                console.error('Notification error:', e);
               }
-            } catch (e) {
-              console.error('Notification error:', e);
             }
           }
         }

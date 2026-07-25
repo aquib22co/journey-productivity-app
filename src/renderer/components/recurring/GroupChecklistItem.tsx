@@ -124,18 +124,6 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
             >
               <X size={12} />
             </Button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (confirm(`Are you sure you want to delete the group "${group.title}"?`)) {
-                  onDeleteGroup(group.id);
-                }
-              }}
-              style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', opacity: 0.8, padding: '0 6px' }}
-              title="Delete Group"
-            >
-              <Trash2 size={14} />
-            </button>
           </div>
         ) : (
           <div 
@@ -310,7 +298,7 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
                   />
                 );
               })}
-              {(isEditingGroup || isAddingSubtask) && (
+              {isAddingSubtask && (
                 <AddSubtaskForm
                   groupId={group.id}
                   onAddSubtask={handleAddSubtask}
