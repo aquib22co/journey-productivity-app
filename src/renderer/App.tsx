@@ -456,7 +456,7 @@ const App: React.FC = () => {
     });
   };
 
-  const handleAddRecurringSubtask = (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => {
+  const handleAddRecurringSubtask = (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number, days?: string[]) => {
     const newSubtaskId = crypto.randomUUID();
     const updated = recurringGroups.map(g => {
       if (g.id === groupId) {
@@ -468,6 +468,7 @@ const App: React.FC = () => {
             time, 
             remind10MinBefore, 
             intervalHours,
+            days,
             enabled: intervalHours ? true : undefined
           }]
         };
@@ -834,7 +835,7 @@ const App: React.FC = () => {
                 <RecurringTasksPanel
                   groups={recurringGroups}
                   completions={recurringCompletions}
-                  selectedDate={getLocalDateString(new Date())}
+                  selectedDate={historyStartDate}
                   onToggleSubtask={handleToggleSubtask}
                   onAddGroup={handleAddRecurringGroup}
                   onDeleteGroup={handleDeleteRecurringGroup}

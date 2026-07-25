@@ -14,7 +14,7 @@ interface GroupChecklistItemProps {
   onToggleSubtask: (groupId: string, subtaskId: string, date: string) => void;
   onToggleIntervalSubtaskEnabled: (groupId: string, subtask: RecurringSubtask) => void;
   formatCountdown: (subtaskId: string, intervalHours: number) => string;
-  onAddSubtask: (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => void;
+  onAddSubtask: (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number, days?: string[]) => void;
   onDeleteSubtask: (groupId: string, subtaskId: string) => void;
   onUpdateSubtask: (groupId: string, subtaskId: string, updatedFields: Partial<RecurringSubtask>) => void;
   onDeleteGroup: (groupId: string) => void;
@@ -39,8 +39,25 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [editGroupName, setEditGroupName] = useState('');
 
-  const totalSubtasks = group.subtasks.filter(st => !st.intervalHours).length;
-  const completedCount = group.subtasks.filter(st => !st.intervalHours && isSubtaskCompleted(st)).length;
+  const getDayNameOfDate = (dateStr: string): string => {
+    const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return DAYS_OF_WEEK[date.getDay()];
+  };
+
+  const selectedDayName = getDayNameOfDate(selectedDate);
+
+  const activeTodaySubtasks = group.subtasks.filter(subtask => {
+    if (subtask.intervalHours) return false;
+    if (subtask.days && subtask.days.length > 0) {
+      return subtask.days.includes(selectedDayName);
+    }
+    return true;
+  });
+
+  const totalSubtasks = activeTodaySubtasks.length;
+  const completedCount = activeTodaySubtasks.filter(st => isSubtaskCompleted(st)).length;
   const percent = totalSubtasks > 0 ? (completedCount / totalSubtasks) * 100 : 0;
 
   const handleToggleEditGroup = () => {
@@ -58,11 +75,10 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
     title: string,
     time?: string,
     remind10MinBefore?: boolean,
-    intervalHours?: number
+    intervalHours?: number,
+    days?: string[]
   ) => {
-    onAddSubtask(groupId, title, time, remind10MinBefore, intervalHours);
-    // If quick adding, automatically close the form. For full editing, keep open.
-    setIsAddingSubtask(false);
+    onAddSubtask(groupId, title, time, remind10MinBefore, intervalHours, days);
   };
 
   return (
@@ -287,6 +303,13 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
                 }
 
                 const isCompleted = isSubtaskCompleted(subtask);
+                const isActiveToday = (() => {
+                  if (subtask.days && subtask.days.length > 0) {
+                    return subtask.days.includes(selectedDayName);
+                  }
+                  return true;
+                })();
+
                 return (
                   <RegularSubtaskItem
                     key={subtask.id}
@@ -295,6 +318,7 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
                     isCompleted={isCompleted}
                     onToggleSubtask={onToggleSubtask}
                     selectedDate={selectedDate}
+                    isActiveToday={isActiveToday}
                   />
                 );
               })}
@@ -302,6 +326,7 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
                 <AddSubtaskForm
                   groupId={group.id}
                   onAddSubtask={handleAddSubtask}
+                  onClose={() => setIsAddingSubtask(false)}
                 />
               )}
             </>

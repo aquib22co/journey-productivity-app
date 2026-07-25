@@ -11,7 +11,7 @@ interface ChecklistViewProps {
   onToggleSubtask: (groupId: string, subtaskId: string, date: string) => void;
   onToggleIntervalSubtaskEnabled: (groupId: string, subtask: RecurringSubtask) => void;
   formatCountdown: (subtaskId: string, intervalHours: number) => string;
-  onAddSubtask: (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number) => void;
+  onAddSubtask: (groupId: string, title: string, time?: string, remind10MinBefore?: boolean, intervalHours?: number, days?: string[]) => void;
   onDeleteSubtask: (groupId: string, subtaskId: string) => void;
   onUpdateSubtask: (groupId: string, subtaskId: string, updatedFields: Partial<RecurringSubtask>) => void;
   onDeleteGroup: (groupId: string) => void;

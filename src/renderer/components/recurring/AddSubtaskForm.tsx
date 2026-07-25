@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface AddSubtaskFormProps {
@@ -9,13 +9,16 @@ interface AddSubtaskFormProps {
     title: string,
     time?: string,
     remind10MinBefore?: boolean,
-    intervalHours?: number
+    intervalHours?: number,
+    days?: string[]
   ) => void;
+  onClose?: () => void;
 }
 
 export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
   groupId,
   onAddSubtask,
+  onClose,
 }) => {
   const [title, setTitle] = useState('');
   const [mode, setMode] = useState<'time' | 'interval'>('time');
@@ -24,6 +27,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
   const [ampm, setAmpm] = useState<'AM' | 'PM'>('AM');
   const [remindBefore, setRemindBefore] = useState(true);
   const [interval, setIntervalVal] = useState('2');
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +42,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
         formattedTime = `${hour.padStart(2, '0')}:${min.padStart(2, '0')} ${ampm}`;
       }
       const remind10MinBefore = formattedTime ? remindBefore : undefined;
-      onAddSubtask(groupId, title.trim(), formattedTime, remind10MinBefore);
+      onAddSubtask(groupId, title.trim(), formattedTime, remind10MinBefore, undefined, selectedDays);
     }
 
     // Reset local states
@@ -48,6 +52,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
     setAmpm('AM');
     setRemindBefore(true);
     setIntervalVal('2');
+    setSelectedDays([]);
   };
 
   const handleMinChange = (val: string) => {
@@ -96,9 +101,22 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
           type="submit"
           size="sm"
           style={{ background: 'var(--accent-color)', height: '26px', width: '26px', padding: 0 }}
+          title="Add Subtask"
         >
           <Plus size={11} />
         </Button>
+        {onClose && (
+          <Button
+            type="button"
+            onClick={onClose}
+            variant="ghost"
+            size="sm"
+            style={{ height: '26px', width: '26px', padding: 0, color: 'var(--text-muted)' }}
+            title="Close Form"
+          >
+            <X size={12} />
+          </Button>
+        )}
       </div>
       
       {/* Subtask Mode Toggle */}
@@ -227,6 +245,54 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
                 </label>
               </div>
             )}
+
+            {/* Day Selector */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', marginTop: '4px' }}>
+              <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Days:</span>
+              <div style={{ display: 'flex', gap: '6px' }}>
+                {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
+                  const isSelected = selectedDays.includes(day);
+                  const DAY_SHORT: Record<string, string> = {
+                    Monday: 'M',
+                    Tuesday: 'T',
+                    Wednesday: 'W',
+                    Thursday: 'Th',
+                    Friday: 'F',
+                    Saturday: 'Sa',
+                    Sunday: 'Su'
+                  };
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDays(prev => 
+                          prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+                        );
+                      }}
+                      style={{
+                        width: '24px',
+                        height: '24px',
+                        borderRadius: '50%',
+                        fontSize: '9px',
+                        fontWeight: 'bold',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        border: '1px solid ' + (isSelected ? 'var(--accent-color)' : 'rgba(255,255,255,0.08)'),
+                        background: isSelected ? 'var(--accent-color)' : 'rgba(255,255,255,0.02)',
+                        color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                        transition: 'all 0.15s ease'
+                      }}
+                      title={day}
+                    >
+                      {DAY_SHORT[day]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           </>
         )}
 

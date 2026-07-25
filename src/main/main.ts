@@ -479,6 +479,12 @@ if (!isPrimaryInstance) {
                 }
               }
             } else if (subtask.time) {
+              if (subtask.days && subtask.days.length > 0) {
+                const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const todayDayName = DAYS_OF_WEEK[now.getDay()];
+                if (!subtask.days.includes(todayDayName)) return;
+              }
+
               const completionsToday = recurringCompletions?.[todayKey] || [];
               const isCompleted = completionsToday.some((evt: any) => {
                 const evtId = typeof evt === 'string' ? evt : evt.subtaskId;
@@ -597,6 +603,12 @@ if (!isPrimaryInstance) {
                 completionsChanged = true;
               }
             } else if (subtask.time) {
+              if (subtask.days && subtask.days.length > 0) {
+                const DAYS_OF_WEEK = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const todayDayName = DAYS_OF_WEEK[now.getDay()];
+                if (!subtask.days.includes(todayDayName)) return;
+              }
+
               const completionsToday = recurringCompletions?.[todayKey] || [];
               const isCompleted = completionsToday.some((evt: any) => {
                 const evtId = typeof evt === 'string' ? evt : evt.subtaskId;

@@ -376,6 +376,18 @@ else {
 						}
 					}
 				} else if (subtask.time) {
+					if (subtask.days && subtask.days.length > 0) {
+						const todayDayName = [
+							"Sunday",
+							"Monday",
+							"Tuesday",
+							"Wednesday",
+							"Thursday",
+							"Friday",
+							"Saturday"
+						][now.getDay()];
+						if (!subtask.days.includes(todayDayName)) return;
+					}
 					if ((recurringCompletions?.[todayKey] || []).some((evt) => {
 						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
 					})) return;
@@ -458,6 +470,18 @@ else {
 						completionsChanged = true;
 					}
 				} else if (subtask.time) {
+					if (subtask.days && subtask.days.length > 0) {
+						const todayDayName = [
+							"Sunday",
+							"Monday",
+							"Tuesday",
+							"Wednesday",
+							"Thursday",
+							"Friday",
+							"Saturday"
+						][now.getDay()];
+						if (!subtask.days.includes(todayDayName)) return;
+					}
 					if (!(recurringCompletions?.[todayKey] || []).some((evt) => {
 						return (typeof evt === "string" ? evt : evt.subtaskId) === subtask.id;
 					})) {

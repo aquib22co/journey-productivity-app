@@ -29,6 +29,7 @@ export interface RecurringSubtask {
   remind10MinBefore?: boolean;
   intervalHours?: number;
   enabled?: boolean;
+  days?: string[];
 }
 
 export interface RecurringGroup {

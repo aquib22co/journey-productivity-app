@@ -24,10 +24,12 @@ export const SubtaskManageItem: React.FC<SubtaskManageItemProps> = ({
   const [editAmpm, setEditAmpm] = useState<'AM' | 'PM'>('AM');
   const [editRemindBefore, setEditRemindBefore] = useState(true);
   const [editInterval, setEditInterval] = useState('2');
+  const [editDays, setEditDays] = useState<string[]>([]);
 
   const handleStartEdit = () => {
     setIsEditing(true);
     setEditTitle(subtask.title);
+    setEditDays(subtask.days || []);
     if (subtask.intervalHours) {
       setEditMode('interval');
       setEditInterval(String(subtask.intervalHours));
@@ -78,7 +80,8 @@ export const SubtaskManageItem: React.FC<SubtaskManageItemProps> = ({
       title: editTitle.trim(),
       time,
       remind10MinBefore,
-      intervalHours
+      intervalHours,
+      days: editMode === 'time' ? editDays : undefined
     });
 
     setIsEditing(false);
@@ -270,6 +273,54 @@ export const SubtaskManageItem: React.FC<SubtaskManageItemProps> = ({
                   </label>
                 </div>
               )}
+
+              {/* Day Selector */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%', marginTop: '4px' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>Days:</span>
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
+                    const isSelected = editDays.includes(day);
+                    const DAY_SHORT: Record<string, string> = {
+                      Monday: 'M',
+                      Tuesday: 'T',
+                      Wednesday: 'W',
+                      Thursday: 'Th',
+                      Friday: 'F',
+                      Saturday: 'Sa',
+                      Sunday: 'Su'
+                    };
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                          setEditDays(prev => 
+                            prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+                          );
+                        }}
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          fontSize: '9px',
+                          fontWeight: 'bold',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          border: '1px solid ' + (isSelected ? 'var(--accent-color)' : 'rgba(255,255,255,0.08)'),
+                          background: isSelected ? 'var(--accent-color)' : 'rgba(255,255,255,0.02)',
+                          color: isSelected ? '#ffffff' : 'var(--text-muted)',
+                          transition: 'all 0.15s ease'
+                        }}
+                        title={day}
+                      >
+                        {DAY_SHORT[day]}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </>
           )}
 
@@ -312,7 +363,23 @@ export const SubtaskManageItem: React.FC<SubtaskManageItemProps> = ({
         )}
         {!subtask.intervalHours && subtask.time && (
           <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
-            {subtask.time} {subtask.remind10MinBefore ? '(10m before)' : '(exact)'}
+            {subtask.time}
+          </span>
+        )}
+        {!subtask.intervalHours && subtask.days && subtask.days.length > 0 && (
+          <span style={{ fontSize: '9px', color: 'var(--accent-color)', background: 'rgba(0, 132, 255, 0.08)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
+            {subtask.days.map(d => {
+              const DAY_SHORT: Record<string, string> = {
+                Monday: 'Mon',
+                Tuesday: 'Tue',
+                Wednesday: 'Wed',
+                Thursday: 'Thu',
+                Friday: 'Fri',
+                Saturday: 'Sat',
+                Sunday: 'Sun'
+              };
+              return DAY_SHORT[d] || d.slice(0, 3);
+            }).join(', ')}
           </span>
         )}
       </div>
