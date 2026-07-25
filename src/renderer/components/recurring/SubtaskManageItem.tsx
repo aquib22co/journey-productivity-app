@@ -382,6 +382,11 @@ export const SubtaskManageItem: React.FC<SubtaskManageItemProps> = ({
             }).join(', ')}
           </span>
         )}
+        {!subtask.intervalHours && (!subtask.days || subtask.days.length === 0) && (
+          <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
+            All Days
+          </span>
+        )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <button

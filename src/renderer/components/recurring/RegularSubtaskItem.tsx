@@ -77,7 +77,23 @@ export const RegularSubtaskItem: React.FC<RegularSubtaskItemProps> = ({
             {subtask.time}
           </span>
         )}
-        {subtask.days && subtask.days.length > 0 && (
+        {(!subtask.days || subtask.days.length === 0) ? (
+          <span
+            style={{
+              fontSize: '9.5px',
+              color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--text-dim)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.02)',
+              padding: '1px 5px',
+              borderRadius: '4px',
+              border: '1px solid rgba(255, 255, 255, 0.04)',
+              flexShrink: 0
+            }}
+          >
+            All Days
+          </span>
+        ) : (
           <span
             style={{
               fontSize: '9.5px',

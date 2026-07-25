@@ -277,51 +277,71 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
             </span>
           ) : (
             <>
-              {group.subtasks.map(subtask => {
-                if (isEditingGroup) {
-                  return (
-                    <SubtaskManageItem
-                      key={subtask.id}
-                      groupId={group.id}
-                      subtask={subtask}
-                      onDeleteSubtask={onDeleteSubtask}
-                      onUpdateSubtask={onUpdateSubtask}
-                    />
-                  );
-                }
+              {(() => {
+                const sortedSubtasks = [...group.subtasks].sort((a, b) => {
+                  const getSortScore = (st: RecurringSubtask) => {
+                    if (st.intervalHours || !st.days || st.days.length === 0) {
+                      return -1;
+                    }
+                    const DAYS_ORDER = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+                    let minIdx = 7;
+                    st.days.forEach(day => {
+                      const idx = DAYS_ORDER.indexOf(day);
+                      if (idx !== -1 && idx < minIdx) {
+                        minIdx = idx;
+                      }
+                    });
+                    return minIdx;
+                  };
+                  return getSortScore(a) - getSortScore(b);
+                });
 
-                if (subtask.intervalHours) {
-                  return (
-                    <IntervalSubtaskItem
-                      key={subtask.id}
-                      groupId={group.id}
-                      subtask={subtask}
-                      onToggleIntervalSubtaskEnabled={onToggleIntervalSubtaskEnabled}
-                      formattedCountdown={formatCountdown(subtask.id, subtask.intervalHours)}
-                    />
-                  );
-                }
-
-                const isCompleted = isSubtaskCompleted(subtask);
-                const isActiveToday = (() => {
-                  if (subtask.days && subtask.days.length > 0) {
-                    return subtask.days.includes(selectedDayName);
+                return sortedSubtasks.map(subtask => {
+                  if (isEditingGroup) {
+                    return (
+                      <SubtaskManageItem
+                        key={subtask.id}
+                        groupId={group.id}
+                        subtask={subtask}
+                        onDeleteSubtask={onDeleteSubtask}
+                        onUpdateSubtask={onUpdateSubtask}
+                      />
+                    );
                   }
-                  return true;
-                })();
 
-                return (
-                  <RegularSubtaskItem
-                    key={subtask.id}
-                    groupId={group.id}
-                    subtask={subtask}
-                    isCompleted={isCompleted}
-                    onToggleSubtask={onToggleSubtask}
-                    selectedDate={selectedDate}
-                    isActiveToday={isActiveToday}
-                  />
-                );
-              })}
+                  if (subtask.intervalHours) {
+                    return (
+                      <IntervalSubtaskItem
+                        key={subtask.id}
+                        groupId={group.id}
+                        subtask={subtask}
+                        onToggleIntervalSubtaskEnabled={onToggleIntervalSubtaskEnabled}
+                        formattedCountdown={formatCountdown(subtask.id, subtask.intervalHours)}
+                      />
+                    );
+                  }
+
+                  const isCompleted = isSubtaskCompleted(subtask);
+                  const isActiveToday = (() => {
+                    if (subtask.days && subtask.days.length > 0) {
+                      return subtask.days.includes(selectedDayName);
+                    }
+                    return true;
+                  })();
+
+                  return (
+                    <RegularSubtaskItem
+                      key={subtask.id}
+                      groupId={group.id}
+                      subtask={subtask}
+                      isCompleted={isCompleted}
+                      onToggleSubtask={onToggleSubtask}
+                      selectedDate={selectedDate}
+                      isActiveToday={isActiveToday}
+                    />
+                  );
+                });
+              })()}
               {isAddingSubtask && (
                 <AddSubtaskForm
                   groupId={group.id}
