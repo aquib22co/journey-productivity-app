@@ -352,40 +352,49 @@ export const SubtaskManageItem: React.FC<SubtaskManageItemProps> = ({
     <div
       style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '2px 0' }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap', minWidth: 0, flex: 1 }}>
-        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+        <span style={{ fontSize: '11.5px', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
           • {subtask.title}
         </span>
-        {subtask.intervalHours && (
-          <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
+        
+        {subtask.intervalHours ? (
+          <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', width: '123px', textAlign: 'center', boxSizing: 'border-box', flexShrink: 0 }}>
             Every {subtask.intervalHours}h
           </span>
-        )}
-        {!subtask.intervalHours && subtask.time && (
-          <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
-            {subtask.time}
-          </span>
-        )}
-        {!subtask.intervalHours && subtask.days && subtask.days.length > 0 && (
-          <span style={{ fontSize: '9px', color: 'var(--accent-color)', background: 'rgba(0, 132, 255, 0.08)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
-            {subtask.days.map(d => {
-              const DAY_SHORT: Record<string, string> = {
-                Monday: 'Mon',
-                Tuesday: 'Tue',
-                Wednesday: 'Wed',
-                Thursday: 'Thu',
-                Friday: 'Fri',
-                Saturday: 'Sat',
-                Sunday: 'Sun'
-              };
-              return DAY_SHORT[d] || d.slice(0, 3);
-            }).join(', ')}
-          </span>
-        )}
-        {!subtask.intervalHours && (!subtask.days || subtask.days.length === 0) && (
-          <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '1px 4px', borderRadius: '3px', flexShrink: 0 }}>
-            All Days
-          </span>
+        ) : (
+          <>
+            {subtask.time ? (
+              <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(0,0,0,0.18)', padding: '1px 4px', borderRadius: '3px', width: '60px', textAlign: 'center', boxSizing: 'border-box', flexShrink: 0 }}>
+                {subtask.time}
+              </span>
+            ) : (
+              <div style={{ width: '60px', flexShrink: 0 }} />
+            )}
+            
+            {(!subtask.days || subtask.days.length === 0) ? (
+              <span style={{ fontSize: '9px', color: 'var(--text-dim)', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '1px 4px', borderRadius: '3px', width: '55px', textAlign: 'center', boxSizing: 'border-box', flexShrink: 0 }}>
+                All Days
+              </span>
+            ) : (
+              <span style={{ fontSize: '9px', color: 'var(--accent-color)', background: 'rgba(0, 132, 255, 0.08)', padding: '1px 4px', borderRadius: '3px', width: '55px', textAlign: 'center', boxSizing: 'border-box', flexShrink: 0 }} title={subtask.days.join(', ')}>
+                {(() => {
+                  if (subtask.days.length > 2) {
+                    return `${subtask.days.length} Days`;
+                  }
+                  const DAY_SHORT: Record<string, string> = {
+                    Monday: 'Mon',
+                    Tuesday: 'Tue',
+                    Wednesday: 'Wed',
+                    Thursday: 'Thu',
+                    Friday: 'Fri',
+                    Saturday: 'Sat',
+                    Sunday: 'Sun'
+                  };
+                  return subtask.days.map(d => DAY_SHORT[d] || d.slice(0, 3)).join(', ');
+                })()}
+              </span>
+            )}
+          </>
         )}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

@@ -43,7 +43,8 @@ export const RegularSubtaskItem: React.FC<RegularSubtaskItemProps> = ({
           style={{ width: '18px', height: '18px', cursor: isActiveToday ? 'pointer' : 'default' }}
         />
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flex: 1, minWidth: 0, gap: '4px' }}>
+      {/* Title & Badge Alignment Wrapper */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: 0 }}>
         <span
           style={{
             fontSize: '12.5px',
@@ -52,30 +53,36 @@ export const RegularSubtaskItem: React.FC<RegularSubtaskItemProps> = ({
             transition: 'color 0.2s ease, text-decoration 0.2s ease',
             textOverflow: 'ellipsis',
             overflow: 'hidden',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            flex: 1
           }}
         >
           {subtask.title}
         </span>
         
-        {subtask.time && (
+        {subtask.time ? (
           <span
             style={{
               fontSize: '9.5px',
               color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--text-dim)',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '2px',
+              justifyContent: 'center',
               background: 'rgba(255, 255, 255, 0.02)',
               padding: '1px 5px',
               borderRadius: '4px',
               border: '1px solid rgba(255, 255, 255, 0.04)',
+              width: '62px',
+              height: '16px',
+              boxSizing: 'border-box',
               flexShrink: 0
             }}
             title={subtask.remind10MinBefore ? 'Reminds 10 min before' : 'Reminds at exact time'}
           >
             {subtask.time}
           </span>
+        ) : (
+          <div style={{ width: '62px', flexShrink: 0 }} />
         )}
         {(!subtask.days || subtask.days.length === 0) ? (
           <span
@@ -84,10 +91,14 @@ export const RegularSubtaskItem: React.FC<RegularSubtaskItemProps> = ({
               color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--text-dim)',
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
               background: 'rgba(255, 255, 255, 0.02)',
               padding: '1px 5px',
               borderRadius: '4px',
               border: '1px solid rgba(255, 255, 255, 0.04)',
+              width: '55px',
+              height: '16px',
+              boxSizing: 'border-box',
               flexShrink: 0
             }}
           >
@@ -100,14 +111,21 @@ export const RegularSubtaskItem: React.FC<RegularSubtaskItemProps> = ({
               color: isCompleted ? 'rgba(255,255,255,0.15)' : 'var(--accent-color)',
               display: 'inline-flex',
               alignItems: 'center',
+              justifyContent: 'center',
               background: 'rgba(0, 132, 255, 0.05)',
               padding: '1px 5px',
               borderRadius: '4px',
               border: '1px solid rgba(0, 132, 255, 0.1)',
+              width: '55px',
+              height: '16px',
+              boxSizing: 'border-box',
               flexShrink: 0
             }}
           >
-            {subtask.days.map(d => {
+            {(() => {
+              if (subtask.days.length > 2) {
+                return `${subtask.days.length} Days`;
+              }
               const DAY_SHORT: Record<string, string> = {
                 Monday: 'Mon',
                 Tuesday: 'Tue',
@@ -117,8 +135,8 @@ export const RegularSubtaskItem: React.FC<RegularSubtaskItemProps> = ({
                 Saturday: 'Sat',
                 Sunday: 'Sun'
               };
-              return DAY_SHORT[d] || d.slice(0, 3);
-            }).join(', ')}
+              return subtask.days.map(d => DAY_SHORT[d] || d.slice(0, 3)).join(', ');
+            })()}
           </span>
         )}
       </div>
