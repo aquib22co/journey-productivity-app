@@ -88,13 +88,13 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
-        marginTop: '12px',
-        padding: '12px',
+        gap: '8px',
+        marginTop: '8px',
+        padding: '10px 12px',
         background: 'rgba(23, 29, 41, 0.95)',
         border: '1px solid rgba(255, 255, 255, 0.08)',
-        borderRadius: '12px',
-        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)',
+        borderRadius: '8px',
+        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)',
         position: 'relative',
         boxSizing: 'border-box',
         width: '100%'
@@ -102,7 +102,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
     >
       {/* Header Row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>New Subtask</span>
+        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-main)' }}>New Subtask</span>
         {onClose && (
           <button
             type="button"
@@ -121,14 +121,14 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
             }}
             className="hover:opacity-100"
           >
-            <X size={14} />
+            <X size={12} />
           </button>
         )}
       </div>
 
       {/* Input: Subtask Name */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-dim)' }}>Subtask Name</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <span style={{ fontSize: '9.5px', fontWeight: 500, color: 'var(--text-dim)' }}>Subtask Name</span>
         <input
           type="text"
           placeholder="Subtask name..."
@@ -136,12 +136,12 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
           onChange={(e) => setTitle(e.target.value)}
           className="input-field"
           style={{
-            padding: '6px 10px',
-            fontSize: '12.5px',
-            height: '30px',
+            padding: '4px 8px',
+            fontSize: '11.5px',
+            height: '24px',
             background: 'rgba(7, 10, 17, 0.4)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '6px',
+            borderRadius: '5px',
             color: 'var(--text-main)',
             width: '100%',
             boxSizing: 'border-box'
@@ -151,8 +151,8 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
       </div>
 
       {/* Row: Reminder Mode Selector */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-dim)' }}>Reminder Type</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <span style={{ fontSize: '9.5px', fontWeight: 500, color: 'var(--text-dim)' }}>Reminder Type</span>
         <div
           style={{
             display: 'flex',
@@ -160,7 +160,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
             overflow: 'hidden',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             background: 'rgba(255, 255, 255, 0.01)',
-            padding: '2px',
+            padding: '1px',
             width: '100%',
             boxSizing: 'border-box'
           }}
@@ -170,8 +170,8 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
             onClick={() => setMode('time')}
             style={{
               flex: 1,
-              padding: '5px 0',
-              fontSize: '11px',
+              padding: '3px 0',
+              fontSize: '10px',
               fontWeight: 600,
               border: 'none',
               borderRadius: '20px',
@@ -189,8 +189,8 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
             onClick={() => setMode('interval')}
             style={{
               flex: 1,
-              padding: '5px 0',
-              fontSize: '11px',
+              padding: '3px 0',
+              fontSize: '10px',
               fontWeight: 600,
               border: 'none',
               borderRadius: '20px',
@@ -207,8 +207,8 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
       </div>
 
       {/* Row: Time Config / Interval Config */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-dim)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+        <span style={{ fontSize: '9.5px', fontWeight: 500, color: 'var(--text-dim)' }}>
           {mode === 'time' ? 'Reminder Time' : 'Repeat Interval'}
         </span>
         <div
@@ -217,10 +217,10 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
             alignItems: 'center',
             justifyContent: 'space-between',
             border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: '6px',
+            borderRadius: '5px',
             background: 'rgba(7, 10, 17, 0.2)',
-            padding: '6px 12px',
-            height: '32px',
+            padding: '4px 8px',
+            height: '26px',
             boxSizing: 'border-box',
             width: '100%'
           }}
@@ -236,7 +236,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
                     background: 'transparent',
                     border: 'none',
                     color: '#ffffff',
-                    fontSize: '13px',
+                    fontSize: '11.5px',
                     outline: 'none',
                     cursor: 'pointer',
                     padding: 0
@@ -246,7 +246,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
                     <option key={h} value={h} style={{ background: '#1c212c', color: '#fff' }}>{h}</option>
                   ))}
                 </select>
-                <span style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '0 2px' }}>:</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '11.5px', padding: '0 1px' }}>:</span>
                 <input
                   type="text"
                   value={min}
@@ -258,9 +258,9 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
                     background: 'transparent',
                     border: 'none',
                     color: '#ffffff',
-                    fontSize: '13px',
+                    fontSize: '11.5px',
                     outline: 'none',
-                    width: '20px',
+                    width: '16px',
                     padding: 0,
                     textAlign: 'center'
                   }}
@@ -268,7 +268,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
               </div>
 
               {/* AM | PM */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', fontWeight: 600 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px', fontWeight: 600 }}>
                 <span
                   onClick={() => setAmpm('AM')}
                   style={{
@@ -300,7 +300,7 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
                 background: 'transparent',
                 border: 'none',
                 color: '#ffffff',
-                fontSize: '13px',
+                fontSize: '11.5px',
                 outline: 'none',
                 cursor: 'pointer',
                 width: '100%',
@@ -321,9 +321,9 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
 
       {/* Row: Days (Circular Selector) */}
       {mode === 'time' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 500, color: 'var(--text-dim)' }}>Active Days</span>
-          <div style={{ display: 'flex', gap: '4px', justifyContent: 'space-between', width: '100%' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ fontSize: '9.5px', fontWeight: 500, color: 'var(--text-dim)' }}>Active Days</span>
+          <div style={{ display: 'flex', gap: '3px', justifyContent: 'space-between', width: '100%' }}>
             {DAYS_LIST.map(day => {
               const isSelected = selectedDays.includes(day);
               return (
@@ -336,10 +336,10 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
                     );
                   }}
                   style={{
-                    width: '24px',
-                    height: '24px',
+                    width: '20px',
+                    height: '20px',
                     borderRadius: '50%',
-                    fontSize: '9.5px',
+                    fontSize: '8.5px',
                     fontWeight: 'bold',
                     display: 'flex',
                     alignItems: 'center',
@@ -362,18 +362,18 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
       )}
 
       {/* Row: Actions (Cancel, Create Subtask) */}
-      <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: '6px' }}>
+      <div style={{ display: 'flex', gap: '6px', width: '100%', marginTop: '2px' }}>
         {onClose && (
           <button
             type="button"
             onClick={onClose}
             style={{
               flex: 1,
-              height: '32px',
-              fontSize: '12px',
+              height: '24px',
+              fontSize: '10.5px',
               fontWeight: 500,
               border: '1px solid rgba(255, 255, 255, 0.15)',
-              borderRadius: '6px',
+              borderRadius: '5px',
               background: 'transparent',
               color: 'var(--text-muted)',
               cursor: 'pointer',
@@ -389,16 +389,16 @@ export const AddSubtaskForm: React.FC<AddSubtaskFormProps> = ({
           type="button"
           onClick={() => handleSubmit()}
           style={{
-            flex: 2,
-            height: '32px',
-            fontSize: '12px',
+            flex: 1.6,
+            height: '24px',
+            fontSize: '10.5px',
             fontWeight: 600,
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: '5px',
             background: 'var(--accent-color)',
             color: '#ffffff',
             cursor: 'pointer',
-            boxShadow: '0 2px 6px rgba(0, 132, 255, 0.3)',
+            boxShadow: '0 1px 4px rgba(0, 132, 255, 0.3)',
             transition: 'opacity 0.2s ease',
             padding: 0
           }}
