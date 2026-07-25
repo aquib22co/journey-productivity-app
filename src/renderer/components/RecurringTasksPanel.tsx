@@ -144,23 +144,7 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
     });
   }, [tick, groups, completions, selectedDate]);
 
-  const getLocalDateDisplay = (dateStr: string) => {
-    const todayStr = (() => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    })();
 
-    if (dateStr === todayStr) {
-      return 'Today';
-    }
-
-    const parts = dateStr.split('-');
-    if (parts.length === 3) {
-      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
-      return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-    }
-    return dateStr;
-  };
 
   const isSubtaskCompleted = (subtask: RecurringSubtask) => {
     if (subtask.intervalHours) {
@@ -271,7 +255,6 @@ export const RecurringTasksPanel: React.FC<RecurringTasksPanelProps> = ({
       <ChecklistView
         groups={groups}
         selectedDate={selectedDate}
-        getLocalDateDisplay={getLocalDateDisplay}
         isSubtaskCompleted={isSubtaskCompleted}
         onToggleSubtask={onToggleSubtask}
         onToggleIntervalSubtaskEnabled={handleToggleIntervalSubtaskEnabled}

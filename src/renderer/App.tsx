@@ -5,9 +5,7 @@ import { Heatmap } from './components/Heatmap';
 import { SettingsPanel } from './components/SettingsPanel';
 import { CompletedTasksPanel, getLocalDateString } from './components/CompletedTasksPanel';
 import { RecurringTasksPanel } from './components/RecurringTasksPanel';
-import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Settings as SettingsIcon, Minus, X, Flame, Award, CheckCircle, Calendar } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const DEFAULT_SETTINGS: Settings = {
@@ -687,6 +685,10 @@ const App: React.FC = () => {
 
   const { currentStreak, maxStreak, totalCompleted } = calculateStreaks(allTasks);
 
+  const today = new Date();
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const formattedDate = today.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+
   const urlParams = new URLSearchParams(window.location.search);
   const isBadgeMode = urlParams.get('mode') === 'badge';
 
@@ -713,102 +715,246 @@ const App: React.FC = () => {
       >
         {/* Frameless Drag Handle Header */}
         <header className="widget-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            {/* Settings Icon enclosed in a dark rounded card button */}
+          {/* Left Block: Logo, Title, Subtitle, and Settings */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {/* App Logo & Title */}
+            <div
+              className="no-drag"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+              }}
+            >
+              <div className="relative flex items-center justify-center" style={{ width: '42px', height: '42px' }}>
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle, rgba(6, 182, 212, 0.18) 0%, transparent 70%)',
+                  filter: 'blur(1px)'
+                }} />
+                <img
+                  src="/journey logo.png"
+                  alt="Journey Logo"
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    objectFit: 'contain',
+                    borderRadius: '50%',
+                    border: '1px solid rgba(6, 182, 212, 0.25)',
+                    position: 'relative',
+                    zIndex: 1
+                  }}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '15px', fontWeight: '700', color: '#ffffff', letterSpacing: '0.01em', lineHeight: '1.2' }}>Journey</span>
+                <span style={{ fontSize: '10px', color: '#94a3b8', fontWeight: '400', whiteSpace: 'nowrap' }}>Focus today, achieve tomorrow.</span>
+              </div>
+            </div>
+
+            {/* Settings Trigger */}
             <div className="no-drag">
               <Tooltip>
                 <TooltipTrigger
                   onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                  className={`win-btn ${isSettingsOpen ? 'active' : ''}`}
                   style={{
-                    width: '48px',
-                    height: '48px',
-                    borderRadius: '10px',
-                    border: '1px solid rgba(255, 255, 255, 0.05)',
-                    background: 'var(--bg-card)',
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: '50%',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    background: isSettingsOpen ? 'rgba(6, 182, 212, 0.1)' : 'rgba(255, 255, 255, 0.02)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: isSettingsOpen ? 'var(--accent-color)' : 'var(--text-muted)'
+                    color: isSettingsOpen ? '#06b6d4' : '#94a3b8',
+                    transition: 'all 0.2s ease',
+                    cursor: 'pointer'
                   }}
+                  className="hover:bg-white/5 hover:text-slate-100"
                 >
-                  <SettingsIcon size={20} />
+                  <SettingsIcon size={15} />
                 </TooltipTrigger>
-                <TooltipContent side="bottom" align="start">
+                <TooltipContent side="bottom">
                   <p>{isSettingsOpen ? 'Close Settings' : 'Open Settings'}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
-
-            {/* Header Stats Row Card (Aligned to left-center) */}
-            {!isSettingsOpen && (
-              <Badge
-                variant="outline"
-                className="flex flex-row items-center gap-6 no-drag"
-                style={{
-                  height: '48px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  background: 'var(--bg-card)',
-                  padding: '0 20px',
-                }}
-              >
-                {/* Streak */}
-                <div className="flex items-center gap-2">
-                  <Flame size={16} className="text-amber-500 fill-amber-500/10" />
-                  <span className="text-[12px] text-slate-400 font-normal">Streak:</span>
-                  <span className="text-[15px] font-bold text-slate-100">{currentStreak}d</span>
-                </div>
-
-                <Separator orientation="vertical" className="bg-white/10" style={{ alignSelf: 'center', height: '16px' }} />
-
-                {/* Max */}
-                <div className="flex items-center gap-2">
-                  <Award size={16} className="text-indigo-400 fill-indigo-400/10" />
-                  <span className="text-[12px] text-slate-400 font-normal">Max:</span>
-                  <span className="text-[15px] font-bold text-slate-100">{maxStreak}d</span>
-                </div>
-
-                <Separator orientation="vertical" className="bg-white/10" style={{ alignSelf: 'center', height: '16px' }} />
-
-                {/* Total */}
-                <div className="flex items-center gap-2">
-                  <CheckCircle size={16} className="text-emerald-400 fill-emerald-400/10" />
-                  <span className="text-[12px] text-slate-400 font-normal">Total:</span>
-                  <span className="text-[15px] font-bold text-slate-100">{totalCompleted}</span>
-                </div>
-              </Badge>
-            )}
           </div>
 
-          {/* Right Side Controls: Minimize and Close */}
-          <div className="window-controls no-drag">
+          {/* Middle/Stats Block: Streak, Best, Total, Date */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {/* Divider */}
+            <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.08)' }} />
+
+            {/* Streak */}
+            <div className="flex items-center gap-3 no-drag">
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: 'rgba(245, 158, 11, 0.06)',
+                  border: '1px solid rgba(245, 158, 11, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 10px rgba(245, 158, 11, 0.05)',
+                }}
+              >
+                <Flame size={18} className="text-amber-500 fill-amber-500/10" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Streak</span>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: '#f1f5f9' }}>
+                  {currentStreak} <span style={{ fontSize: '11px', fontWeight: '400', color: '#94a3b8' }}>days</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.08)' }} />
+
+            {/* Best */}
+            <div className="flex items-center gap-3 no-drag">
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: 'rgba(99, 102, 241, 0.06)',
+                  border: '1px solid rgba(99, 102, 241, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 10px rgba(99, 102, 241, 0.05)',
+                }}
+              >
+                <Award size={18} className="text-indigo-400 fill-indigo-400/10" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Best</span>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: '#f1f5f9' }}>
+                  {maxStreak} <span style={{ fontSize: '11px', fontWeight: '400', color: '#94a3b8' }}>days</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.08)' }} />
+
+            {/* Total */}
+            <div className="flex items-center gap-3 no-drag">
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: 'rgba(16, 185, 129, 0.06)',
+                  border: '1px solid rgba(16, 185, 129, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 10px rgba(16, 185, 129, 0.05)',
+                }}
+              >
+                <CheckCircle size={18} className="text-emerald-400 fill-emerald-400/10" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '500' }}>Total</span>
+                <span style={{ fontSize: '14px', fontWeight: '700', color: '#f1f5f9' }}>
+                  {totalCompleted} <span style={{ fontSize: '11px', fontWeight: '400', color: '#94a3b8' }}>tasks</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ width: '1px', height: '24px', background: 'rgba(255, 255, 255, 0.08)' }} />
+
+            {/* Date */}
+            <div className="flex items-center gap-3 no-drag">
+              <div
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  background: 'rgba(59, 130, 246, 0.06)',
+                  border: '1px solid rgba(59, 130, 246, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: '0 0 10px rgba(59, 130, 246, 0.05)',
+                }}
+              >
+                <Calendar size={18} className="text-blue-400 fill-blue-400/10" />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: '1.2' }}>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#f1f5f9' }}>{dayName}</span>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: '400', whiteSpace: 'nowrap' }}>{formattedDate}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side Controls: Minimize and Close Capsule */}
+          <div
+            className="no-drag"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.06)',
+              borderRadius: '20px',
+              padding: '2px 4px',
+              gap: '2px',
+            }}
+          >
             <Tooltip>
               <TooltipTrigger
                 onClick={handleMinimize}
-                className="win-btn"
-                style={{ width: '38px', height: '38px', borderRadius: '8px' }}
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#94a3b8',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                }}
+                className="hover:bg-white/5 hover:text-slate-100"
               >
-                <Minus size={15} />
+                <Minus size={14} />
               </TooltipTrigger>
               <TooltipContent side="bottom">
                 <p>Minimize</p>
               </TooltipContent>
             </Tooltip>
 
+            <div style={{ width: '1px', height: '14px', background: 'rgba(255, 255, 255, 0.08)' }} />
+
             <Tooltip>
               <TooltipTrigger
                 onClick={handleClose}
-                className="win-btn close"
                 style={{
-                  width: '38px',
-                  height: '38px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  background: 'rgba(255, 255, 255, 0.02)'
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#94a3b8',
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                 }}
+                className="hover:bg-red-500/10 hover:text-red-400"
               >
-                <X size={15} />
+                <X size={14} />
               </TooltipTrigger>
               <TooltipContent side="bottom" align="end">
                 <p>Close Widget</p>

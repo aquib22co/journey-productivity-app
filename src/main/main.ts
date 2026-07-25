@@ -13,6 +13,17 @@ let tray: Tray | null = null;
 
 const dataFilePath = path.join(app.getPath('userData'), 'journey-widget-data.json');
 
+// Helper functions to get custom icon paths
+function getAppIconPath() {
+  const isDev = !!process.env.VITE_DEV_SERVER_URL;
+  return path.join(__dirname, isDev ? '../public/journey logo.png' : '../dist/journey logo.png');
+}
+
+function getWindowIconPath() {
+  const isDev = !!process.env.VITE_DEV_SERVER_URL;
+  return path.join(__dirname, isDev ? '../public/journey logo.ico' : '../dist/journey logo.ico');
+}
+
 // Default icon in base64: a simple 16x16 teal square with rounded appearance (in PNG format)
 const defaultIconBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC';
 
@@ -116,7 +127,18 @@ function toggleMainWindow() {
 }
 
 function createTray() {
-  const icon = nativeImage.createFromDataURL(defaultIconBase64);
+  let icon: any;
+  try {
+    const iconPath = getAppIconPath();
+    if (fs.existsSync(iconPath)) {
+      icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+    } else {
+      icon = nativeImage.createFromDataURL(defaultIconBase64);
+    }
+  } catch (error) {
+    console.error('Error loading custom tray icon:', error);
+    icon = nativeImage.createFromDataURL(defaultIconBase64);
+  }
   tray = new Tray(icon);
 
   const contextMenu = Menu.buildFromTemplate([
@@ -179,6 +201,7 @@ function createWindow() {
     }
   }
 
+  const winIconPath = getWindowIconPath();
   win = new BrowserWindow({
     x: windowX,
     y: windowY,
@@ -193,6 +216,7 @@ function createWindow() {
     alwaysOnTop: false,
     skipTaskbar: true,
     backgroundMaterial: 'none',
+    icon: fs.existsSync(winIconPath) ? winIconPath : undefined,
     webPreferences: {
       preload: path.join(__dirname, 'preload.mjs'),
       nodeIntegration: false,
@@ -264,6 +288,7 @@ function createBadgeWindow() {
     const badgeY = height - badgeSize - 24;
     console.log(`[Main] Badge coordinates calculated: x=${badgeX}, y=${badgeY}, size=${badgeSize}`);
 
+    const winIconPath = getWindowIconPath();
     badgeWin = new BrowserWindow({
       x: badgeX,
       y: badgeY,
@@ -275,6 +300,7 @@ function createBadgeWindow() {
       skipTaskbar: true,
       resizable: false,
       backgroundMaterial: 'none',
+      icon: fs.existsSync(winIconPath) ? winIconPath : undefined,
       webPreferences: {
         preload: path.join(__dirname, 'preload.mjs'),
         nodeIntegration: false,

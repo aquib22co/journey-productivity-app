@@ -1,12 +1,11 @@
 import React from 'react';
-import { Calendar, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import type { RecurringGroup, RecurringSubtask } from '../../../shared/types';
 import { GroupChecklistItem } from './GroupChecklistItem';
 
 interface ChecklistViewProps {
   groups: RecurringGroup[];
   selectedDate: string;
-  getLocalDateDisplay: (dateStr: string) => string;
   isSubtaskCompleted: (subtask: RecurringSubtask) => boolean;
   onToggleSubtask: (groupId: string, subtaskId: string, date: string) => void;
   onToggleIntervalSubtaskEnabled: (groupId: string, subtask: RecurringSubtask) => void;
@@ -21,7 +20,6 @@ interface ChecklistViewProps {
 export const ChecklistView: React.FC<ChecklistViewProps> = ({
   groups,
   selectedDate,
-  getLocalDateDisplay,
   isSubtaskCompleted,
   onToggleSubtask,
   onToggleIntervalSubtaskEnabled,
@@ -34,13 +32,7 @@ export const ChecklistView: React.FC<ChecklistViewProps> = ({
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
-      {/* Sub-Header: Date */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '2px 0 12px 0' }}>
-        <Calendar size={14} style={{ color: 'var(--accent-color)' }} />
-        <span style={{ fontSize: '12.5px', fontWeight: 600, color: 'var(--accent-color)' }}>
-          {getLocalDateDisplay(selectedDate)}
-        </span>
-      </div>
+
 
       {/* Group Checklist Content */}
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '2px' }} className="no-drag">

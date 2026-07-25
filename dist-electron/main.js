@@ -3,8 +3,17 @@ import * as l from "path";
 import * as u from "fs";
 import { fileURLToPath as d } from "url";
 //#region src/main/main.ts
-var f = d(import.meta.url), p = l.dirname(f), m = null, h = null, g = null, _ = l.join(i.getPath("userData"), "journey-widget-data.json"), v = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC";
+var f = d(import.meta.url), p = l.dirname(f), m = null, h = null, g = null, _ = l.join(i.getPath("userData"), "journey-widget-data.json");
+function v() {
+	let e = !!process.env.VITE_DEV_SERVER_URL;
+	return l.join(p, e ? "../public/journey logo.png" : "../dist/journey logo.png");
+}
 function y() {
+	let e = !!process.env.VITE_DEV_SERVER_URL;
+	return l.join(p, e ? "../public/journey logo.ico" : "../dist/journey logo.ico");
+}
+var b = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABoSURBVDhPY2AYWOD///8gDFIMwgxAgK5g1IDS///vQYIMQAwS1DAGDOgKGIYE4IJRFEAOY8CArYBhSAPEYCw2/P///0mO4eHhBvGJ4xPHp552AHIYAwZsBQxDGiAGY7EBAJm3YkQp3b2oAAAAAElFTkSuQmCC";
+function x() {
 	try {
 		if (u.existsSync(_)) {
 			let e = u.readFileSync(_, "utf-8"), t = JSON.parse(e), n = {};
@@ -61,21 +70,31 @@ function y() {
 		windowBounds: null
 	};
 }
-function b(e) {
+function S(e) {
 	try {
 		return u.writeFileSync(_, JSON.stringify(e, null, 2), "utf-8"), !0;
 	} catch (e) {
 		return console.error("Error writing data:", e), !1;
 	}
 }
-function x() {
+function C() {
 	if (!m) return;
 	let e = m.isVisible(), t = m.isFocused();
-	!e || h && h.isVisible() ? (h && h.hide(), m.show(), m.focus(), m.setAlwaysOnTop(!0)) : t ? (m.hide(), h ? h.show() : w()) : (m.show(), m.focus(), m.setAlwaysOnTop(!0));
+	!e || h && h.isVisible() ? (h && h.hide(), m.show(), m.focus(), m.setAlwaysOnTop(!0)) : t ? (m.hide(), h ? h.show() : E()) : (m.show(), m.focus(), m.setAlwaysOnTop(!0));
 }
-function S() {
-	g = new r(s.createFromDataURL(v));
-	let e = t.buildFromTemplate([
+function w() {
+	let e;
+	try {
+		let t = v();
+		e = u.existsSync(t) ? s.createFromPath(t).resize({
+			width: 16,
+			height: 16
+		}) : s.createFromDataURL(b);
+	} catch (t) {
+		console.error("Error loading custom tray icon:", t), e = s.createFromDataURL(b);
+	}
+	g = new r(e);
+	let n = t.buildFromTemplate([
 		{
 			label: "Show Widget",
 			click: () => {
@@ -96,14 +115,14 @@ function S() {
 			}
 		}
 	]);
-	g.setToolTip("Journey - Activity Widget"), g.setContextMenu(e), g.on("click", () => {
-		x();
+	g.setToolTip("Journey - Activity Widget"), g.setContextMenu(n), g.on("click", () => {
+		C();
 	});
 }
-function C() {
-	let t = y().windowBounds, { width: n, height: r, x: i, y: a } = c.getPrimaryDisplay().workArea, o = 1e3, s = 620;
+function T() {
+	let t = x().windowBounds, { width: n, height: r, x: i, y: a } = c.getPrimaryDisplay().workArea, o = 1e3, s = 620;
 	t && typeof t.width == "number" && typeof t.height == "number" && (o = Math.max(950, Math.min(1200, t.width)), s = Math.max(800, Math.min(800, t.height)));
-	let u = i + n - o - 24, d = a + r - s - 24;
+	let d = i + n - o - 24, f = a + r - s - 24;
 	if (t && typeof t.x == "number" && typeof t.y == "number") {
 		let e = t.x + o / 2, n = t.y + s / 2, r = !1, i = c.getAllDisplays();
 		for (let t of i) {
@@ -113,11 +132,12 @@ function C() {
 				break;
 			}
 		}
-		r && (u = t.x, d = t.y);
+		r && (d = t.x, f = t.y);
 	}
+	let h = y();
 	m = new e({
-		x: u,
-		y: d,
+		x: d,
+		y: f,
 		width: o,
 		height: s,
 		minWidth: 1100,
@@ -129,41 +149,44 @@ function C() {
 		alwaysOnTop: !1,
 		skipTaskbar: !0,
 		backgroundMaterial: "none",
+		icon: u.existsSync(h) ? h : void 0,
 		webPreferences: {
 			preload: l.join(p, "preload.mjs"),
 			nodeIntegration: !1,
 			contextIsolation: !0
 		}
 	}), process.env.VITE_DEV_SERVER_URL ? m.loadURL(process.env.VITE_DEV_SERVER_URL) : m.loadFile(l.join(p, "../dist/index.html"));
-	let f = null, h = () => {
-		f && clearTimeout(f), f = setTimeout(() => {
+	let g = null, _ = () => {
+		g && clearTimeout(g), g = setTimeout(() => {
 			if (m) try {
-				let e = m.getBounds(), t = y();
+				let e = m.getBounds(), t = x();
 				t.windowBounds = {
 					x: e.x,
 					y: e.y,
 					width: e.width,
 					height: e.height
-				}, b(t);
+				}, S(t);
 			} catch (e) {
 				console.error("Failed to save window bounds:", e);
 			}
 		}, 500);
 	};
-	m.on("move", h), m.on("resize", h), m.on("blur", () => {
+	m.on("move", _), m.on("resize", _), m.on("blur", () => {
 		m && m.setAlwaysOnTop(!1);
 	}), m.on("closed", () => {
-		f && clearTimeout(f), m = null;
+		g && clearTimeout(g), m = null;
 	});
 }
-function w() {
+function E() {
 	if (console.log("[Main] createBadgeWindow called"), h) {
 		console.log("[Main] badgeWin already exists");
 		return;
 	}
 	try {
 		let { width: t, height: n } = c.getPrimaryDisplay().workArea, r = t - 70 - 24, i = n - 70 - 24;
-		if (console.log(`[Main] Badge coordinates calculated: x=${r}, y=${i}, size=70`), h = new e({
+		console.log(`[Main] Badge coordinates calculated: x=${r}, y=${i}, size=70`);
+		let a = y();
+		if (h = new e({
 			x: r,
 			y: i,
 			width: 70,
@@ -174,6 +197,7 @@ function w() {
 			skipTaskbar: !0,
 			resizable: !1,
 			backgroundMaterial: "none",
+			icon: u.existsSync(a) ? a : void 0,
 			webPreferences: {
 				preload: l.join(p, "preload.mjs"),
 				nodeIntegration: !1,
@@ -221,7 +245,7 @@ else {
 		return t && s.setMinutes(s.getMinutes() - 10), s;
 	}
 	function s() {
-		let e = y(), { tasks: i, recurringGroups: a, recurringCompletions: s, settings: c } = e;
+		let e = x(), { tasks: i, recurringGroups: a, recurringCompletions: s, settings: c } = e;
 		if (!c.enableNotifications) return;
 		let l = /* @__PURE__ */ new Date(), u = !1, d = `${l.getFullYear()}-${String(l.getMonth() + 1).padStart(2, "0")}-${String(l.getDate()).padStart(2, "0")}`;
 		i.forEach((e) => {
@@ -235,7 +259,7 @@ else {
 						body: e.description || "This task is now due."
 					});
 					t.on("click", () => {
-						x(), m && m.webContents && m.webContents.send("highlight-task", e.id);
+						C(), m && m.webContents && m.webContents.send("highlight-task", e.id);
 					}), t.show();
 				}
 			}
@@ -274,7 +298,7 @@ else {
 									body: `Time for your habit: ${r.title} (due every ${r.intervalHours}h)`
 								});
 								t.on("click", () => {
-									x();
+									C();
 								}), t.show();
 							}
 							s[d] || (s[d] = []), s[d].push({
@@ -307,16 +331,16 @@ else {
 								body: t
 							});
 							i.on("click", () => {
-								x();
+								C();
 							}), i.show();
 						}
 					}
 				}
 			});
-		}), u && (e.recurringCompletions = s, b(e), m && m.webContents && m.webContents.send("recurring-completions-updated", s));
+		}), u && (e.recurringCompletions = s, S(e), m && m.webContents && m.webContents.send("recurring-completions-updated", s));
 	}
 	function c() {
-		let e = y(), { tasks: n, recurringGroups: i, recurringCompletions: a } = e, c = /* @__PURE__ */ new Date(), l = `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}-${String(c.getDate()).padStart(2, "0")}`, u = !1;
+		let e = x(), { tasks: n, recurringGroups: i, recurringCompletions: a } = e, c = /* @__PURE__ */ new Date(), l = `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}-${String(c.getDate()).padStart(2, "0")}`, u = !1;
 		n.forEach((e) => {
 			if (!e.completedAt) {
 				let n = r(e);
@@ -376,13 +400,13 @@ else {
 					}
 				}
 			});
-		}), u && (e.recurringCompletions = a, b(e)), s(), setInterval(s, 6e4);
+		}), u && (e.recurringCompletions = a, S(e)), s(), setInterval(s, 6e4);
 	}
 	i.whenReady().then(() => {
-		C(), S(), c(), a.register("CommandOrControl+Alt+J", () => {
-			x();
+		T(), w(), c(), a.register("CommandOrControl+Alt+J", () => {
+			C();
 		}), i.on("activate", () => {
-			e.getAllWindows().length === 0 && C();
+			e.getAllWindows().length === 0 && T();
 		});
 	});
 }
@@ -390,19 +414,19 @@ i.on("window-all-closed", () => {
 	process.platform !== "darwin" && i.quit();
 }), i.on("will-quit", () => {
 	a.unregisterAll();
-}), o.handle("get-tasks", () => y().tasks), o.handle("save-tasks", (e, t) => {
-	let n = y();
-	return n.tasks = t, b(n);
-}), o.handle("get-recurring-groups", () => y().recurringGroups), o.handle("save-recurring-groups", (e, t) => {
-	let n = y();
-	return n.recurringGroups = t, b(n);
-}), o.handle("get-recurring-completions", () => y().recurringCompletions), o.handle("save-recurring-completions", (e, t) => {
-	let n = y();
-	return n.recurringCompletions = t, b(n);
-}), o.handle("get-settings", () => y().settings), o.handle("save-settings", (e, t) => {
-	let n = y();
+}), o.handle("get-tasks", () => x().tasks), o.handle("save-tasks", (e, t) => {
+	let n = x();
+	return n.tasks = t, S(n);
+}), o.handle("get-recurring-groups", () => x().recurringGroups), o.handle("save-recurring-groups", (e, t) => {
+	let n = x();
+	return n.recurringGroups = t, S(n);
+}), o.handle("get-recurring-completions", () => x().recurringCompletions), o.handle("save-recurring-completions", (e, t) => {
+	let n = x();
+	return n.recurringCompletions = t, S(n);
+}), o.handle("get-settings", () => x().settings), o.handle("save-settings", (e, t) => {
+	let n = x();
 	n.settings = t;
-	let r = b(n);
+	let r = S(n);
 	r && m && m.setAlwaysOnTop(!1);
 	try {
 		i.setLoginItemSettings({
@@ -417,7 +441,7 @@ i.on("window-all-closed", () => {
 	m && m.setAlwaysOnTop(!1);
 }), o.handle("set-opacity", (e, t) => {}), o.handle("minimize-window", () => {
 	if (console.log("[Main] IPC minimize-window handler invoked"), m) try {
-		console.log("[Main] Hiding main window..."), m.hide(), h ? (console.log("[Main] badgeWin is already spawned. Showing badge..."), h.show()) : (console.log("[Main] badgeWin is null. Spawning badge..."), w());
+		console.log("[Main] Hiding main window..."), m.hide(), h ? (console.log("[Main] badgeWin is already spawned. Showing badge..."), h.show()) : (console.log("[Main] badgeWin is null. Spawning badge..."), E());
 	} catch (e) {
 		console.error("[Main] Error handling minimize-window IPC:", e);
 	}

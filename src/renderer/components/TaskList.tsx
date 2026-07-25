@@ -79,13 +79,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
     }
   }, []);
 
-  // Date Formatting for Subheader
-  const todayFormatted = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  });
+
 
   const handleToggleComplete = (task: Task) => {
     const isCompleting = !task.completedAt;
@@ -194,17 +188,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onUpdateTask, onDelet
         )}
       </div>
 
-      {/* Sub-Header: Date */}
-      {!detailedTask && !isAddingTask && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '2px 0 10px 0' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Calendar size={14} style={{ color: '#0084ff' }} />
-            <span style={{ fontSize: '12.5px', fontWeight: 600, color: '#0084ff' }}>
-              {todayFormatted}
-            </span>
-          </div>
-        </div>
-      )}
+
 
       {/* Task Rows List */}
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px', zIndex: 2 }}>
