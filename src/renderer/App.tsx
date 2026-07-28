@@ -735,7 +735,7 @@ const App: React.FC = () => {
                   filter: 'blur(1px)'
                 }} />
                 <img
-                  src="/journey logo.png"
+                  src="./journey logo.png"
                   alt="Journey Logo"
                   style={{
                     width: '38px',

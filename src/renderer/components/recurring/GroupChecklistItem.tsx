@@ -84,13 +84,11 @@ export const GroupChecklistItem: React.FC<GroupChecklistItemProps> = ({
   return (
     <div 
       style={{ 
-        background: 'rgba(255, 255, 255, 0.01)',
-        border: '1px solid rgba(255, 255, 255, 0.03)',
-        borderRadius: '8px',
-        padding: '10px 12px',
         display: 'flex',
         flexDirection: 'column',
         gap: '8px',
+        padding: '10px 0px 14px 0px',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
         transition: 'all 0.2s ease'
       }}
     >
